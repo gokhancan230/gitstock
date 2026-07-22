@@ -1,0 +1,1023 @@
+<meta charset="utf-8">
+<title>GCstock — AMZN Günlük Karar Raporu</title>
+<style>
+  :root {
+    --bg: #F3F5F7; --surface: #FFFFFF; --ink: #1C2733; --muted: #5B6B7A;
+    --line: #D8DFE6; --accent: #8A5A18; --accent-soft: #F0E4D0;
+    --bull: #2E7D5B; --base: #3D6BA8; --bear: #B34A40;
+    --sigma-fill: rgba(61,107,168,0.07); --cone-fill: rgba(61,107,168,0.10);
+    --chip-data-bg: #1C2733; --chip-data-ink: #F3F5F7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #10161D; --surface: #1A222C; --ink: #E6ECF2; --muted: #93A2B1;
+      --line: #2A3542; --accent: #D9A24A; --accent-soft: #2E2617;
+      --bull: #4CAF87; --base: #6E9BD4; --bear: #D4776C;
+      --sigma-fill: rgba(110,155,212,0.08); --cone-fill: rgba(110,155,212,0.12);
+      --chip-data-bg: #E6ECF2; --chip-data-ink: #10161D;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #10161D; --surface: #1A222C; --ink: #E6ECF2; --muted: #93A2B1;
+    --line: #2A3542; --accent: #D9A24A; --accent-soft: #2E2617;
+    --bull: #4CAF87; --base: #6E9BD4; --bear: #D4776C;
+    --sigma-fill: rgba(110,155,212,0.08); --cone-fill: rgba(110,155,212,0.12);
+    --chip-data-bg: #E6ECF2; --chip-data-ink: #10161D;
+  }
+  :root[data-theme="light"] {
+    --bg: #F3F5F7; --surface: #FFFFFF; --ink: #1C2733; --muted: #5B6B7A;
+    --line: #D8DFE6; --accent: #8A5A18; --accent-soft: #F0E4D0;
+    --bull: #2E7D5B; --base: #3D6BA8; --bear: #B34A40;
+    --sigma-fill: rgba(61,107,168,0.07); --cone-fill: rgba(61,107,168,0.10);
+    --chip-data-bg: #1C2733; --chip-data-ink: #F3F5F7;
+  }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: "Avenir Next", "Segoe UI", system-ui, sans-serif;
+    line-height: 1.55; margin: 0; padding: 2rem 1rem 4rem;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.5rem; }
+  header.report { border-bottom: 3px solid var(--accent); padding-bottom: 1rem; }
+  .eyebrow { text-transform: uppercase; letter-spacing: 0.14em; font-size: 0.72rem; color: var(--accent); font-weight: 600; }
+  h1 { font-size: 1.7rem; margin: 0.2rem 0 0.3rem; text-wrap: balance; letter-spacing: -0.01em; }
+  .meta { color: var(--muted); font-size: 0.85rem; display: flex; gap: 1.2rem; flex-wrap: wrap; }
+  .num { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-variant-numeric: tabular-nums; }
+  .legend { display: flex; gap: 0.8rem; align-items: center; font-size: 0.8rem; flex-wrap: wrap; }
+  .chip { display: inline-block; padding: 0.1rem 0.55rem; border-radius: 3px; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.06em; }
+  .chip.data { background: var(--chip-data-bg); color: var(--chip-data-ink); }
+  .chip.judgment { border: 1.5px dashed var(--accent); color: var(--accent); background: transparent; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 1.4rem 1.5rem 1.6rem; }
+  .card h2 { margin: 0 0 0.2rem; font-size: 1.25rem; display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap; }
+  .card h2 .exch { font-size: 0.72rem; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.1em; }
+  .sigbanner { display: flex; align-items: stretch; gap: 0; border-radius: 8px; overflow: hidden; margin: 0.9rem 0 0.5rem; border: 2px solid var(--line); flex-wrap: wrap; }
+  .sig-word { display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 0.8rem 1.6rem; min-width: 120px; color: #fff; }
+  .sig-word .w { font-size: 2rem; font-weight: 800; letter-spacing: 0.04em; line-height: 1; }
+  .sig-word .c { font-size: 0.66rem; opacity: 0.9; margin-top: 0.25rem; letter-spacing: 0.06em; text-transform: uppercase; }
+  .sig-word.tut { background: var(--accent); }
+  .sig-word.al { background: var(--bull); }
+  .sig-word.sat { background: var(--bear); }
+  .sig-ranges { flex: 1 1 300px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+  .sig-box { padding: 0.6rem 0.9rem; border-left: 1px solid var(--line); }
+  .sig-box .t { font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); margin-bottom: 0.15rem; }
+  .sig-box .r { font-size: 1.15rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .sig-box .r.buy { color: var(--bull); } .sig-box .r.sell { color: var(--bear); }
+  .sig-box .d { font-size: 0.68rem; color: var(--muted); line-height: 1.35; }
+  .score-strip { display: flex; align-items: center; gap: 1.2rem; margin: 0.9rem 0 0.3rem; padding: 0.8rem 1rem; border: 2px solid var(--accent); border-radius: 6px; background: var(--accent-soft); flex-wrap: wrap; }
+  .score-big { font-size: 2.3rem; font-weight: 800; line-height: 1; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .score-big small { font-size: 0.9rem; font-weight: 600; color: var(--muted); }
+  .score-tier { font-size: 0.8rem; font-weight: 700; letter-spacing: 0.05em; }
+  .breakdown { flex: 1 1 300px; display: grid; gap: 0.25rem; min-width: 240px; }
+  .bd-row { display: grid; grid-template-columns: 110px 1fr 48px; gap: 0.5rem; align-items: center; font-size: 0.7rem; }
+  .bd-bar { height: 7px; background: var(--line); border-radius: 4px; overflow: hidden; }
+  .bd-fill { height: 100%; background: var(--accent); border-radius: 4px; }
+  .viz-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.8rem; margin: 1rem 0; }
+  .viz { border: 1px solid var(--line); border-radius: 6px; padding: 0.7rem 0.85rem; }
+  .viz h4 { margin: 0 0 0.5rem; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); }
+  .gauge { position: relative; height: 10px; border-radius: 5px; background: linear-gradient(90deg, var(--bull) 0 30%, var(--line) 30% 70%, var(--bear) 70% 100%); }
+  .gauge-pin { position: absolute; top: -4px; width: 4px; height: 18px; background: var(--ink); border-radius: 2px; transform: translateX(-50%); }
+  .gauge-lbls { display: flex; justify-content: space-between; font-size: 0.62rem; color: var(--muted); margin-top: 0.3rem; }
+  .gauge-val { font-size: 1rem; font-weight: 700; margin-top: 0.25rem; }
+  .ema-stack { display: flex; flex-direction: column; gap: 0.22rem; font-size: 0.76rem; }
+  .ema-row { display: flex; justify-content: space-between; padding: 0.18rem 0.5rem; border-radius: 3px; background: var(--bg); gap: 0.6rem; }
+  .ema-row.price { background: var(--accent-soft); font-weight: 700; }
+  .ema-ok { color: var(--bull); font-weight: 700; }
+  .stackbar { display: flex; height: 16px; border-radius: 4px; overflow: hidden; margin: 0.4rem 0 0.3rem; }
+  .stackbar span { display: block; height: 100%; }
+  .stack-lbls { display: flex; gap: 0.7rem; flex-wrap: wrap; font-size: 0.64rem; color: var(--muted); }
+  .stack-lbls i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 3px; }
+  .chart-img { border: 1px solid var(--line); border-radius: 6px; overflow: hidden; margin: 0.8rem 0 0.3rem; }
+  .cap { font-size: 0.68rem; color: var(--muted); margin: 0.2rem 0 0.6rem; }
+  .verdict { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); border: 2px solid var(--ink); border-radius: 6px; overflow: hidden; margin: 0.9rem 0 0.4rem; }
+  .v-cell { padding: 0.6rem 0.85rem; border-right: 1px solid var(--line); }
+  .v-cell:last-child { border-right: none; }
+  .v-cell.signal { background: var(--accent-soft); }
+  .v-label { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 0.1rem; }
+  .v-main { font-size: 1.06rem; font-weight: 700; }
+  .v-cell.signal .v-main { color: var(--accent); }
+  .v-sub { font-size: 0.71rem; color: var(--muted); line-height: 1.35; margin-top: 0.1rem; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.7rem; margin: 0.9rem 0 1.1rem; }
+  .stat { border-left: 3px solid var(--line); padding: 0.15rem 0 0.15rem 0.6rem; }
+  .stat .label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+  .stat .value { font-size: 0.98rem; font-weight: 600; }
+  .chartbox { overflow-x: auto; }
+  .chartbox svg { width: 100%; height: auto; display: block; }
+  table.insiders { width: 100%; border-collapse: collapse; font-size: 0.78rem; margin-top: 0.6rem; }
+  table.insiders th { text-align: left; font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); border-bottom: 1px solid var(--line); padding: 0.35rem 0.5rem; }
+  table.insiders td { padding: 0.45rem 0.5rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  table.insiders tr:last-child td { border-bottom: none; }
+  .note { font-size: 0.8rem; color: var(--muted); border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 0.6rem 0.9rem; border-radius: 0 4px 4px 0; margin-top: 1rem; }
+  footer.sources { font-size: 0.76rem; color: var(--muted); border-top: 1px solid var(--line); padding-top: 1rem; }
+  footer.sources ul { margin: 0.4rem 0 0.8rem 1.1rem; padding: 0; }
+  .warn { font-weight: 600; }
+  @media (prefers-reduced-motion: no-preference) { .card { transition: border-color 0.2s; } .card:hover { border-color: var(--accent); } }
+  .tag3 { display:inline-block; padding:0.06rem 0.45rem; border-radius:3px; font-size:0.62rem; font-weight:700; letter-spacing:0.05em; }
+  .tag3.v { background: var(--chip-data-bg); color: var(--chip-data-ink); }
+  .tag3.c { border:1.5px dashed var(--accent); color:var(--accent); }
+  .tag3.s { border:1px dotted var(--muted); color:var(--muted); font-style:italic; }
+  .dd h3 { font-size:0.95rem; margin:1.1rem 0 0.35rem; padding-bottom:0.25rem; border-bottom:2px solid var(--accent); }
+  .bbgrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:0.8rem; margin:0.7rem 0; }
+  .bbc { border-radius:6px; padding:0.7rem 0.9rem; font-size:0.78rem; line-height:1.5; }
+  .bbc.bl { border:1px solid var(--bull); background:color-mix(in srgb, var(--bull) 8%, transparent); }
+  .bbc.br { border:1px solid var(--bear); background:color-mix(in srgb, var(--bear) 8%, transparent); }
+  .bbc b { display:block; margin-bottom:0.3rem; }
+  .final { border:3px solid var(--ink); border-radius:10px; padding:1.1rem 1.3rem 1.3rem; margin-top:1.4rem; background:var(--surface); }
+  .final h3 { margin:0 0 0.2rem; font-size:1.3rem; letter-spacing:-0.01em; }
+  .path { border:2px solid var(--line); border-radius:8px; padding:0.85rem 1rem; margin:0.7rem 0; }
+  .path.a { border-color:var(--bull); background:color-mix(in srgb,var(--bull) 6%,transparent); }
+  .path.b { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 7%,transparent); }
+  .path .ph { font-size:0.95rem; font-weight:800; margin-bottom:0.4rem; }
+  .step { display:grid; grid-template-columns:26px 1fr; gap:0.55rem; align-items:start; font-size:0.8rem; line-height:1.5; padding:0.28rem 0; }
+  .step .n { width:22px;height:22px;border-radius:50%;background:var(--ink);color:var(--surface);display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:800; }
+  .path.a .step .n { background:var(--bull); } .path.b .step .n { background:var(--accent); }
+  .bigline { font-size:1.05rem; font-weight:800; line-height:1.5; padding:0.8rem 1rem; border-radius:8px; background:var(--ink); color:var(--surface); margin-top:0.9rem; }
+  .scale { display:flex; height:34px; border-radius:6px; overflow:hidden; margin:0.5rem 0 0.3rem; font-size:0.78rem; font-weight:800; }
+  .scale .sb { display:flex; align-items:center; justify-content:center; color:#fff; }
+  .evrow { display:grid; grid-template-columns:1fr 46px; gap:0.5rem; align-items:center; font-size:0.72rem; padding:0.16rem 0; }
+  .evbar { height:6px; border-radius:3px; }
+  .bigev { font-size:1.9rem; font-weight:800; line-height:1; font-variant-numeric:tabular-nums; }
+  .nd { font-size:0.71rem; line-height:1.45; color:var(--muted); padding:0.3rem 0.55rem 0.45rem; border-left:2px solid var(--accent); margin:0.1rem 0 0.45rem 0.3rem; }
+  .nd b { color:var(--ink); }
+  .nd .fp { display:block; margin-top:0.2rem; color:var(--accent); font-weight:600; }
+  .explain { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:0.4rem 1.1rem; margin:0.5rem 0 0.2rem; padding:0.7rem 0.9rem; border:1px dashed var(--line); border-radius:6px; font-size:0.74rem; }
+  .explain .e { display:flex; gap:0.45rem; align-items:flex-start; line-height:1.45; }
+  .explain .e b { color:var(--accent); white-space:nowrap; flex-shrink:0; }
+  .gloss { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:0.35rem 1.1rem; font-size:0.73rem; margin-top:0.5rem; }
+  .gloss div { line-height:1.4; }
+  .gloss b { color:var(--accent); }
+  .divstrip { display:flex; align-items:center; gap:0; border:2px solid var(--line); border-radius:8px; overflow:hidden; margin:0.2rem 0 0.4rem; flex-wrap:wrap; }
+  .div-badge { display:flex; flex-direction:column; justify-content:center; align-items:center; padding:0.65rem 1.3rem; min-width:118px; color:#fff; }
+  .div-badge .w { font-size:1.25rem; font-weight:800; line-height:1.05; letter-spacing:0.03em; }
+  .div-badge .f { font-size:0.62rem; opacity:0.92; margin-top:0.2rem; text-transform:uppercase; letter-spacing:0.06em; }
+  .div-badge.yes { background: var(--bull); }
+  .div-badge.no { background: var(--muted); }
+  .div-cells { flex:1 1 300px; display:grid; grid-template-columns:repeat(auto-fit,minmax(165px,1fr)); }
+  .div-cell { padding:0.55rem 0.85rem; border-left:1px solid var(--line); }
+  .div-cell .t { font-size:0.6rem; text-transform:uppercase; letter-spacing:0.09em; color:var(--muted); margin-bottom:0.12rem; }
+  .div-cell .v { font-size:0.92rem; font-weight:700; font-variant-numeric:tabular-nums; }
+  .div-cell .s { font-size:0.66rem; color:var(--muted); line-height:1.35; }
+  .asym { display:inline-block; padding:0.25rem 0.8rem; border-radius:20px; font-weight:800; font-size:0.9rem; background:var(--accent-soft); color:var(--accent); border:2px solid var(--accent); }
+</style>
+
+<div class="wrap">
+  <header class="report">
+    <div class="eyebrow">GCstock · Günlük Analiz</div>
+    <h1>Günlük Karar Raporu — AMZN</h1>
+    <div class="meta">
+      <span>Rapor anı: <span class="num">21 Temmuz 2026, 19:42</span> · Fiyat: <span class="num" style="font-weight:800;color:var(--ink)">$247.51</span> <span style="font-size:0.75rem">(piyasa açıktı — gün içi seviyeler oynar)</span></span>
+      <span>Bugünün iki sorusu: <b>Yeni alım için pahalı mı, ucuz mu?</b> · <b>Eldeki hisse ne zaman satılır?</b></span>
+    </div>
+    <div class="legend" style="margin-top:0.7rem">
+      <span class="tag3 v">VERİ</span> <span>kaynaklı, doğrulanmış</span>
+      <span class="tag3 c">ÇIKARIM</span> <span>veriden türetilen akıl yürütme</span>
+      <span class="tag3 s">SPEKÜLASYON</span> <span>senaryo / görüş</span>
+    </div>
+  </header>
+
+  <!-- TEMETTÜ ŞERİDİ -->
+  <div class="divstrip">
+    <div class="div-badge no"><span class="w">YOK</span><span class="f">Temettü</span></div>
+    <div class="div-cells">
+      <div class="div-cell"><div class="t">Ödeme sıklığı</div><div class="v">—</div><div class="s">Hiç temettü kaydı yok</div></div>
+      <div class="div-cell"><div class="t">Son 3 ödeme</div><div class="v">—</div><div class="s">Şirket hiç temettü dağıtmadı</div></div>
+      <div class="div-cell"><div class="t">Sonraki ödeme</div><div class="v">—</div><div class="s">Planlanmış ödeme yok</div></div>
+      <div class="div-cell"><div class="t">Temettü verimi</div><div class="v">%0.00</div><div class="s">$247.51 (rapor anı) fiyata göre</div></div>
+    </div>
+  </div>
+  <div class="cap" style="margin:-0.1rem 0 0.2rem"><span class="tag3 v">VERİ</span> Çapraz doğrulandı: FMP temettü kaydı <b>yok</b> + TTM metriklerde temettü verimi <b>yok</b> → "ödemiyor" bir <b>gerçek</b>, veri eksikliği değil. <b>Okuma:</b> raporun temel bulgusuyla tutarlı — AMZN nakdin %100'ünü capex'e gömüyor (FCF negatif), dolayısıyla getiri yalnızca <b>hisse değeri artışından</b> gelebilir.</div>
+
+  <div class="sigbanner">
+    <div class="sig-word tut"><span class="w">TUT</span><span class="c">AMZN · 58/100</span></div>
+    <div class="sig-ranges">
+      <div class="sig-box"><div class="t">🚪 İlk kez alacaksan</div><div class="r buy num">$232 – 238</div><div class="d">200G MA ($234.21) + 60 günde 4 destek dokunuşu çakışması · dönüş mumu teyidi · <b>Şimdi girme:</b> R/R 0.5 · Alternatif: $257 üstü hacimli kırılım</div></div>
+      <div class="sig-box"><div class="t">⚡ Hissen varsa — KISA VADE satış</div><div class="r sell num">$253 – 270</div><div class="d">Teknik dirençler · Kademeli: $253-257 (%40) → $265-270 (%40) · <b>ANINDA SAT:</b> günlük kapanış &lt; $232 · ufuk: haftalar</div></div>
+      <div class="sig-box"><div class="t">🎯 Hissen varsa — UZUN VADE satış</div><div class="r sell num">$310 – 362</div><div class="d">Değerleme tavanı · $305-315 (%40) → $355-365 (kalan) · <b>TEZ BOZULURSA fiyattan bağımsız çık</b> · ufuk: 6-12 ay</div></div>
+    </div>
+  </div>
+
+  <section class="card">
+    <h2>Amazon.com, Inc. <span class="num">AMZN</span> <span class="exch">NASDAQ · USD</span></h2>
+
+    <div class="score-strip">
+      <div>
+        <div class="score-big">58<small>/100</small></div>
+        <div class="score-tier">GCstock Puanı: NÖTR / İZLE</div>
+        <div class="cap">Güçlü haber akışı · zayıf giriş noktası · negatif FCF</div>
+      </div>
+      <div class="breakdown">
+        <div class="bd-row"><span>Teknik motor</span><div class="bd-bar"><div class="bd-fill" style="width:60%"></div></div><span class="num">15/25</span></div>
+        <div class="bd-row"><span>Temel + değerleme</span><div class="bd-bar"><div class="bd-fill" style="width:70%"></div></div><span class="num">14/20</span></div>
+        <div class="bd-row"><span>Giriş kalitesi (R/R)</span><div class="bd-bar"><div class="bd-fill" style="width:33%"></div></div><span class="num">5/15</span></div>
+        <div class="bd-row"><span>Momentum/Sektör</span><div class="bd-bar"><div class="bd-fill" style="width:50%"></div></div><span class="num">5/10</span></div>
+        <div class="bd-row"><span>Katalizör</span><div class="bd-bar"><div class="bd-fill" style="width:60%"></div></div><span class="num">6/10</span></div>
+        <div class="bd-row"><span>Insider</span><div class="bd-bar"><div class="bd-fill" style="width:50%"></div></div><span class="num">5/10</span></div>
+        <div class="bd-row"><span>Haber duyarlılığı</span><div class="bd-bar"><div class="bd-fill" style="width:80%"></div></div><span class="num">8/10</span></div>
+      </div>
+    </div>
+
+    <div class="explain">
+      <div class="e"><b>Teknik motor</b><span>Grafiğin kendisi ne diyor? Fiyat yükseliş eğiliminde mi, düşüşte mi. <i>Yüksek puan = grafik alım için uygun görünüyor.</i></span></div>
+      <div class="e"><b>Temel + değerleme</b><span>Şirket sağlam mı VE fiyatı makul mü? Kârı, borcu, ürettiği nakit. <i>Yüksek puan = iyi şirket, adil fiyat.</i></span></div>
+      <div class="e"><b>Giriş kalitesi</b><span>Bugünkü fiyattan alsam, kazanabileceğim kaybedebileceğime değer mi? <i>Düşük puan = şirket iyi olsa bile fiyat şu an uygun değil.</i></span></div>
+      <div class="e"><b>Momentum/Sektör</b><span>Hisse son dönemde piyasadan ve rakiplerinden daha iyi mi gidiyor? <i>Yüksek puan = rüzgar arkadan esiyor.</i></span></div>
+      <div class="e"><b>Katalizör</b><span>Yakında fiyatı hareket ettirebilecek bir olay var mı (bilanço, ürün, anlaşma)? <i>Yüksek puan = yakında hikaye var.</i></span></div>
+      <div class="e"><b>Insider</b><span>Şirket yöneticileri kendi paralarıyla hisse alıyor mu, satıyor mu? <i>Alıyorlarsa şirketlerine güveniyorlar demektir.</i></span></div>
+      <div class="e"><b>Haber duyarlılığı</b><span>Son haberler olumlu mu olumsuz mu? <i>Yüksek puan = haber akışı hisseyi destekliyor.</i></span></div>
+      <div class="e"><b>Puanın anlamı</b><span>Bu puan <b>şirketin kalitesini değil, BUGÜN alım fırsatının kalitesini</b> ölçer. Harika şirket + kötü giriş fiyatı = orta puan.</span></div>
+    </div>
+
+    <div class="note"><span class="warn">NEDEN "TUT" ve NEDEN "YENİ ALIM İÇİN BEKLE"?</span><br><br>
+    <b>📈 Grafik hâlâ iyi durumda — bu yüzden elindekini satma.</b><br>
+    Fiyat ($247.51), uzun vadeli ortalamasının ($234) üstünde. Bu, genel yönün hâlâ <b>yukarı</b> olduğu anlamına gelir. Momentum göstergesi de yeni yukarı döndü — yani düşüş hızı kesildi.<br><br>
+    <b>⚠️ Ama bugünkü fiyat yeni alım için pahalı — bu yüzden bekle.</b><br>
+    Buradan alırsan: yukarıda ilk engel $255'te (yalnızca <b>+%3 kazanç</b>), aşağıda mantıklı çıkış noktan $232'de (<b>−%6 zarar</b>). Yani <b>riskin, kazancından iki kat büyük</b>. Oysa $235'ten alırsan bu tam tersine döner: risk küçülür, kazanç büyür.<br><br>
+    <b>📅 9 gün sonra bilanço var (30 Temmuz).</b><br>
+    Şirket kâr rakamlarını açıklayacak. Rakam beklentiden saparsa fiyat tek günde sert oynar — yukarı da olabilir aşağı da. Böyle bir belirsizlikten hemen önce tüm paranı yatırmak <b>kumar</b> olur.<br><br>
+    <b>🤔 Kafa karıştıran nokta:</b><br>
+    Haberler çok iyi (yeni yapay zeka çipleri, büyük ortaklıklar) <b>ama şirket kazandığı paranın tamamını yeni yatırımlara harcıyor</b> — geriye nakit kalmıyor. Yani <b>hikaye güzel, parası henüz gelmedi</b>. Bu yatırımlar geri dönerse hisse uçar; dönmezse hem kâr hem fiyat düşer.</div>
+
+    <div class="verdict">
+      <div class="v-cell signal">
+        <div class="v-label">Sinyal</div>
+        <div class="v-main">TUT</div>
+        <div class="v-sub">Yeni giriş: BEKLE ($232-238) · Güven: Orta-Yüksek</div>
+      </div>
+      <div class="v-cell">
+        <div class="v-label">12 Ay Hedef <span class="tag3 c">ÇIKARIM</span></div>
+        <div class="v-main num">$273 <span style="font-size:0.75rem;color:var(--bull)">+%10</span></div>
+        <div class="v-sub num">Boğa $362 · Ayı $186 · 3A $255 · 6A $272</div>
+      </div>
+      <div class="v-cell">
+        <div class="v-label">Pahalı mı / Ucuz mu?</div>
+        <div class="v-main" style="color:var(--accent)">ADİL — HAFİF PAHALI</div>
+        <div class="v-sub num">F/K 29.3x — emsallerinin EN pahalısı (META 18.7x · MSFT 20.7x · GOOGL 25x)</div>
+      </div>
+      <div class="v-cell">
+        <div class="v-label">Stop (yeni giriş için)</div>
+        <div class="v-main num">$226 <span style="font-size:0.75rem">−%3.8</span></div>
+        <div class="v-sub">$235 girişten · 25 Haz dibi ($227.01) altı = yapı kırılır</div>
+      </div>
+      <div class="v-cell">
+        <div class="v-label">Yeni Giriş Bölgesi</div>
+        <div class="v-main num">$232–238 ⭐</div>
+        <div class="v-sub">200G MA + Haziran destek kümesi · şimdi girilir mi: <b>HAYIR</b></div>
+      </div>
+    </div>
+
+    <div class="viz-grid">
+      <div class="viz" style="grid-column:1/-1;border-top:3px solid var(--accent)">
+        <h4>🔮 3 / 6 / 12 Ay Sonra Fiyat Ne Olur? <span class="tag3 c">ÇIKARIM</span></h4>
+        <div class="cap" style="margin:0 0 0.6rem">Bugün <b>$247.51</b>. Aşağıda her dönem için üç ihtimal var. <b>"Gerçekleşme ihtimali"</b> = o senaryonun olma şansına dair tahminim. Üçünün toplamı %100'dür.</div>
+        <table class="insiders">
+          <tr><th>Ne zaman</th><th style="color:var(--bull)">🟢 İyi giderse</th><th style="color:var(--accent)">🟡 Normal giderse</th><th style="color:var(--bear)">🔴 Kötü giderse</th><th>Ne olursa böyle olur</th></tr>
+          <tr>
+            <td><b>3 ay sonra</b><br><span style="font-size:0.68rem;color:var(--muted)">Ekim 2026</span></td>
+            <td class="num" style="color:var(--bull)"><b>$285</b> · +%15<br><span style="font-size:0.68rem">ihtimal <b>%25</b></span></td>
+            <td class="num" style="color:var(--accent);background:var(--accent-soft)"><b>$255</b> · +%3<br><span style="font-size:0.68rem">ihtimal <b>%50</b> ← en olası</span></td>
+            <td class="num" style="color:var(--bear)"><b>$220</b> · −%11<br><span style="font-size:0.68rem">ihtimal <b>%25</b></span></td>
+            <td style="font-size:0.72rem">30 Temmuz bilançosu iyi gelirse yukarı, kötü gelirse aşağı. Ekim'de ortağı Anthropic'in halka açılması artı puan.</td>
+          </tr>
+          <tr>
+            <td><b>6 ay sonra</b><br><span style="font-size:0.68rem;color:var(--muted)">Ocak 2027</span></td>
+            <td class="num" style="color:var(--bull)"><b>$310</b> · +%25<br><span style="font-size:0.68rem">ihtimal <b>%30</b></span></td>
+            <td class="num" style="color:var(--accent);background:var(--accent-soft)"><b>$272</b> · +%10<br><span style="font-size:0.68rem">ihtimal <b>%45</b> ← en olası</span></td>
+            <td class="num" style="color:var(--bear)"><b>$210</b> · −%15<br><span style="font-size:0.68rem">ihtimal <b>%25</b></span></td>
+            <td style="font-size:0.72rem">İki bilanço dönemi daha geçmiş olur. Yılbaşı alışveriş sezonu satışları belli olur.</td>
+          </tr>
+          <tr>
+            <td><b>12 ay sonra</b><br><span style="font-size:0.68rem;color:var(--muted)">Temmuz 2027</span></td>
+            <td class="num" style="color:var(--bull)"><b>$362</b> · +%46<br><span style="font-size:0.68rem">ihtimal <b>%30</b></span></td>
+            <td class="num" style="color:var(--accent);background:var(--accent-soft)"><b>$273</b> · +%10<br><span style="font-size:0.68rem">ihtimal <b>%45</b> ← en olası</span></td>
+            <td class="num" style="color:var(--bear)"><b>$186</b> · −%25<br><span style="font-size:0.68rem">ihtimal <b>%25</b></span></td>
+            <td style="font-size:0.72rem">Şirketin yaptığı dev yatırımların karşılığını verip vermediği artık anlaşılmış olur.</td>
+          </tr>
+        </table>
+        <div class="cap" style="margin-top:0.5rem"><b>📌 Özetle ne diyor:</b> En olası senaryoda <b>1 yılda yaklaşık %10 kazanç</b>. Ama dörtte bir ihtimalle <b>%25 kaybedebilirsin</b> de. Yani "kesin kazanç" diye bir şey yok — bu yüzden paranın tamamını tek hisseye koymamak gerekir.<br>
+        <b>Bu rakamlar nereden geliyor?</b> 12 aylık tahminler <b>43 analistin kâr beklentilerinden</b> hesaplandı (uydurma değil). 3 ve 6 ay ise bunun arasına, bilanço tarihlerine göre yerleştirildi. <b>Ama bunlar tahmin, garanti değil</b> — ihtimal yüzdeleri benim değerlendirmem.<br>
+        ⚠️ <b>Dürüst uyarı:</b> 12 aylık iyi senaryo ($362) tarihsel olarak nadir görülen bir sıçrama gerektiriyor — o yüzden %30 ihtimal verdim, daha fazlasını değil.</div>
+      </div>
+
+      <div class="viz" style="border-top:3px solid var(--accent)">
+        <h4>⚖️ Ne Kadar Kazanırım, Ne Kadar Kaybederim?</h4>
+        <div class="cap" style="margin:0 0 0.4rem"><b>Planlanan giriş $235'ten</b> hesaplandı:</div>
+        <div class="ema-stack" style="font-size:0.76rem">
+          <div class="ema-row"><span>En kötü ihtimalle çıkış ($226)</span><span class="num" style="color:var(--bear)">−%3.8 zarar</span></div>
+          <div class="ema-row"><span>İlk hedefe ulaşırsa ($255)</span><span class="num" style="color:var(--bull)">+%8.5 kazanç</span></div>
+          <div class="ema-row"><span>İkinci hedefe ulaşırsa ($268)</span><span class="num" style="color:var(--bull)">+%14 kazanç</span></div>
+        </div>
+        <div class="score-big" style="font-size:1.6rem;margin-top:0.5rem">2.2 <span style="font-size:0.8rem;color:var(--accent)">★★★★☆</span></div>
+        <div class="cap"><b>Ne demek:</b> Riske ettiğin <b>1 liraya karşılık 2.2 lira</b> kazanç bekliyorsun. 2'nin üstü iyidir.<br>
+        ⚠️ <b>Ama şu andan ($247.51) alırsan bu oran 0.5'e düşer</b> — yani 1 lira riske karşı sadece 0.5 lira kazanç. Kötü. Tek fark giriş fiyatı: <b>12 dolar sabır, oranı 4 katına çıkarıyor.</b></div>
+      </div>
+
+      <div class="viz">
+        <h4>🎲 Bu Fiyatlar Görülür mü? (30 gün)</h4>
+        <div class="ema-stack" style="font-size:0.76rem">
+          <div class="ema-row"><span>$232-238'e düşer mi? (alım fırsatı)</span><span class="num">%45 ihtimal</span></div>
+          <div class="ema-row"><span>$255'i görür mü? (ilk hedef)</span><span class="num" style="color:var(--bull)">%40 ihtimal</span></div>
+          <div class="ema-row"><span>$268'i görür mü? (ikinci hedef)</span><span class="num">%15 ihtimal</span></div>
+          <div class="ema-row"><span>$226'ya iner mi? (zarar kes)</span><span class="num" style="color:var(--bear)">%20 ihtimal</span></div>
+        </div>
+        <div class="cap">Bunlar ayrı ayrı ihtimallerdir, toplamları %100 olmak zorunda değil. Hesaba katılanlar: fiyatın yatay seyri, göstergelerin nötr olması, 30 Temmuz bilançosunun belirsizliği ve analistlerin güçlü desteği.</div>
+      </div>
+
+      <div class="viz">
+        <h4>⏱️ Ne Kadar Süre Elde Tutulur?</h4>
+        <div class="score-big" style="font-size:1.35rem">5–20 gün</div>
+        <div class="gauge-val" style="font-size:0.85rem;color:var(--muted)">Orta vadeli işlem</div>
+        <div class="cap">Yükseliş eğilimi içindeki bir geri çekilmeden alım, tipik olarak birkaç haftalık bir işlemdir — ne günlük alım-satım ne de yıllarca tutma.<br>
+        <b>İki istisna:</b> ① 30 Temmuz bilançosu süreyi kısaltabilir (sonuç kötüyse erken çıkılır) · ② fiyat $257'yi güçlü şekilde kırarsa işlem <b>aylara</b> uzayabilir.</div>
+      </div>
+
+      <div class="viz">
+        <h4>💪 Fiyatın Genel Yönü Ne Kadar Güçlü?</h4>
+        <div class="score-big" style="font-size:1.4rem">★★★☆☆</div>
+        <div class="gauge-val" style="color:var(--accent)">YATAY — ne güçlü yukarı, ne aşağı</div>
+        <div class="cap">Fiyat, uzun vadeli ortalamasının <b>üstünde</b> (iyi işaret) ama son 50 günün ortalamasının <b>altında</b> (henüz tam toparlanmadı). Momentum göstergesi yeni yukarı döndü.<br>
+        <b>Sonuç:</b> Yön henüz netleşmemiş, hisse bir bant içinde gidip geliyor. Bant kenarları (alt: $232, üst: $257) işlem fırsatı veriyor.</div>
+      </div>
+
+      <div class="viz">
+        <h4>🌡️ Fiyat Ne Kadar Oynak? <span class="tag3 v">VERİ</span></h4>
+        <div class="score-big" style="font-size:1.4rem">Günde ±%1.5</div>
+        <div class="gauge-val" style="color:var(--base)">NORMAL</div>
+        <div class="cap">Son 30 günde fiyat günlük ortalama %1.5 oynadı. Bu, büyük şirketler için normal bir seviye (çok oynak hisseler %3-5 oynar).<br>
+        ⚠️ <b>Bilanço haftasında bu 2-3 katına çıkar</b> — yani tek günde %3-5'lik hareketler görülebilir. Zarar kes seviyesini ona göre geniş tut.</div>
+      </div>
+
+      <div class="viz">
+        <h4>🎯 Bu Analize Ne Kadar Güvenebilirim?</h4>
+        <div class="score-big" style="font-size:1.4rem">%83</div>
+        <div class="ema-stack" style="font-size:0.7rem;margin-top:0.3rem">
+          <div class="ema-row"><span>Veriler eksiksiz mi?</span><span class="num">90</span></div>
+          <div class="ema-row"><span>İki farklı kaynak uyuşuyor mu?</span><span class="num">90</span></div>
+          <div class="ema-row"><span>Şirket rakamları elde var mı?</span><span class="num">90</span></div>
+          <div class="ema-row"><span>Yeterli haber var mı? (15 makale)</span><span class="num">90</span></div>
+          <div class="ema-row"><span>Analistler hemfikir mi?</span><span class="num" style="color:var(--bear)">55</span></div>
+        </div>
+        <div class="cap">Güveni düşüren tek şey: <b>analistler kendi aralarında anlaşamıyor</b>. Hedefleri $175 ile $335 arasında dağılmış — yani uzmanlar bile bu hissede ikiye bölünmüş durumda.</div>
+      </div>
+
+      <div class="viz">
+        <h4>📐 Ne Kadar Para Koymalıyım? <span class="tag3 c">ÇIKARIM</span></h4>
+        <div class="ema-stack" style="font-size:0.76rem">
+          <div class="ema-row"><span><b>Temkinli</b> — az risk sevenler</span><span class="num">Portföyün ~%6.5'i</span></div>
+          <div class="ema-row price"><span><b>Dengeli</b> — çoğu yatırımcı</span><span class="num">~%13</span></div>
+          <div class="ema-row"><span><b>Cesur</b> — üst sınır</span><span class="num">~%25</span></div>
+        </div>
+        <div class="cap"><b>Mantığı:</b> Giriş $235, zarar kes $226 → aradaki fark %3.8. Yani portföyünün %13'ünü koyarsan ve en kötü senaryo olursa, <b>toplam paranın sadece %0.5'ini</b> kaybedersin.<br>
+        ⚠️ <b>Bilanço öncesi bu miktarların YARISI ile başla</b>, 30 Temmuz'da sonuç netleşince tamamla.</div>
+      </div>
+    </div>
+
+    <div class="viz-grid">
+      <div class="viz" style="border-top:3px solid var(--accent)">
+        <h4>💵 Bugün Alsam: Pahalı mı, Ucuz mu?</h4>
+        <div class="ema-row price" style="margin-bottom:0.5rem"><span><b>VERDİKT</b></span><span style="color:var(--accent)"><b>ADİL — HAFİF PAHALI</b></span></div>
+
+        <div class="ema-row"><span><b>F/K oranı</b> (Fiyat ÷ Kâr)</span><span class="num" style="color:var(--bear)">29.3x</span></div>
+        <div class="nd"><b>Ne demek:</b> Şirketin bir yıllık kârının <b>29 katını</b> ödüyorsun. Yani bugünkü kâr hızıyla bu parayı geri çıkarması 29 yıl sürer.
+        <span class="fp">→ Gelecek fiyat için: Rakipleri 19-25 kattan işlem görüyor (META 18.7 · MSFT 20.7 · GOOGL 25). AMZN'in daha pahalı olması, piyasanın ondan <b>daha hızlı büyüme beklediği</b> anlamına gelir. Bu beklenti tutmazsa fiyat bu farkı kapatmak için düşer.</span></div>
+
+        <div class="ema-row"><span><b>EV/EBITDA</b> (borç dahil şirket değeri ÷ nakit kâr)</span><span class="num">14.7x</span></div>
+        <div class="nd"><b>Ne demek:</b> Şirketin tamamını borçlarıyla birlikte satın alsaydın, yıllık nakit kârının 14.7 katını ödemen gerekirdi.
+        <span class="fp">→ Gelecek fiyat için: Bu ölçü borçları da sayar, bu yüzden F/K'dan daha dürüst bir "pahalılık" göstergesidir. 14.7x büyük teknoloji şirketleri için <b>makul</b> — yani şirket göründüğü kadar pahalı değil.</span></div>
+
+        <div class="ema-row"><span><b>FCF verimi</b> (cebinde kalan nakit ÷ fiyat)</span><span class="num" style="color:var(--bear)">−%0.09 → NEGATİF</span></div>
+        <div class="nd"><b>Ne demek:</b> Şirket tüm masraf ve yatırımlarından sonra <b>cebinde para bırakmıyor</b> — hatta biraz eksiye geçiyor. Kazandığının tamamını yeni veri merkezlerine harcıyor.
+        <span class="fp">→ Gelecek fiyat için: <b>Raporun en kritik satırı budur.</b> Bu yatırımlar 2-3 yıl içinde geri dönerse nakit patlar ve fiyat uçar. Dönmezse hem kâr hem fiyat birlikte düşer. <b>Tüm yatırım tezi bu tek soruya bağlı.</b></span></div>
+
+        <div class="ema-row"><span><b>52 haftalık konum</b></span><span class="num">%62 ($196–278.56 aralığında)</span></div>
+        <div class="nd"><b>Ne demek:</b> Son bir yılın en düşük ($196) ve en yüksek ($278.56) fiyatı arasında, ortanın biraz üstündesin.
+        <span class="fp">→ Gelecek fiyat için: Ne dip fırsatı ne de tepe riski. <b>Orta bölge = yön henüz belli değil.</b> Bu tür seviyelerde acele etmek yerine kenarları (alt $232 / üst $257) beklemek mantıklıdır.</span></div>
+
+        <div class="ema-row"><span><b>Analist hedefine mesafe</b></span><span class="num" style="color:var(--bull)">+%24.9 ($309)</span></div>
+        <div class="nd"><b>Ne demek:</b> 43 uzmanın ortalama 1 yıllık hedefi $309; bugünkü fiyat $247.51.
+        <span class="fp">→ Gelecek fiyat için: Uzmanlar <b>yaklaşık %25 yukarı</b> bekliyor. Ama hedefleri $175 ile $335 arasında dağılmış — yani <b>kendileri de emin değil</b>. Bu geniş dağılım, "kesin yükselir" demenin mümkün olmadığını gösterir.</span></div>
+
+        <div class="cap" style="margin-top:0.5rem"><b>📌 Sonuç:</b> Gerçek ucuzluk bölgesi <b>$232-238</b> (uzun vadeli ortalama + destek kümesi, ~27x F/K). Emsal karşılaştırması AMZN'i pahalı gösteriyor, <b>ama</b> kimse dev yatırımların bittiği yılın kazancını fiyatlamıyor — asıl soru bu.</div>
+      </div>
+
+      <div class="viz" style="border-top:3px solid var(--accent)">
+        <h4>💰 Elimde Var: Ne Zaman Satarım? — KISA vs UZUN VADE</h4>
+        <div style="font-size:0.7rem;font-weight:800;color:var(--bear);text-transform:uppercase;letter-spacing:0.07em;margin:0.3rem 0 0.2rem">⚡ Kısa vade — teknik (haftalar)</div>
+        <div class="ema-stack" style="font-size:0.74rem">
+          <div class="ema-row"><span>1. Kademe — $253-257 (BB üst $256.47 + 3 ret)</span><span class="num">%40 sat</span></div>
+          <div class="ema-row"><span>2. Kademe — $265-270 (May-Haz zirve bölgesi)</span><span class="num">%40 sat</span></div>
+          <div class="ema-row"><span>Kalan %20 — $278.56 (52H zirve) hedefli</span><span class="num">iz süren stop</span></div>
+          <div class="ema-row price"><span><b>ANINDA SAT</b></span><span class="num" style="color:var(--bear)">Günlük kapanış &lt; $232</span></div>
+        </div>
+        <div style="font-size:0.7rem;font-weight:800;color:var(--bull);text-transform:uppercase;letter-spacing:0.07em;margin:0.7rem 0 0.2rem">🎯 Uzun vade — değerleme (6-12 ay)</div>
+        <div class="ema-stack" style="font-size:0.74rem">
+          <div class="ema-row"><span>1. Kademe — $305-315 (analist konsensüsü $309 + 6A boğa $310)</span><span class="num">%40 sat</span></div>
+          <div class="ema-row"><span>2. Kademe — $355-365 (12A boğa $362 = konsensüs ÜST EPS × 32x)</span><span class="num">kalan sat</span></div>
+          <div class="ema-row"><span>$273 (baz adil değer) civarı</span><span class="num" style="color:var(--muted)">SATMA — burası adil, prim değil</span></div>
+          <div class="ema-row price"><span><b>TEZ BOZULMA ÇIKIŞI</b> (fiyattan bağımsız)</span><span class="num" style="color:var(--bear)">aşağıdaki 3 koşuldan biri</span></div>
+        </div>
+        <div class="cap" style="margin-top:0.4rem"><b>Uzun vadeci neden farklı satar:</b> Kısa vadede fiyat dirençte satılır; uzun vadede <b>tez bozulduğunda</b> satılır. AMZN için tezi bozan 3 şey: ① AWS büyümesi <b>üst üste 2 çeyrek %25 altına</b> inerse · ② FCF <b>2027'ye kadar pozitife dönmezse</b> (capex getirisiz demektir) · ③ capex/gelir <b>%20'nin üstünde kalmaya devam ederse</b>. Bunlardan biri gerçekleşirse fiyat ne olursa olsun pozisyon azaltılır — $310'u beklemenin anlamı kalmaz.<br>
+        ⚠️ <b>Vergi/işlem notu:</b> Kısa vade kademelerini uygularken uzun vade pozisyonunu ayrı tut — aynı hisseyi iki farklı ufukla yönetiyorsan pozisyonu baştan ikiye böl (örn. %60 uzun vade çekirdek + %40 kısa vade işlem), yoksa kısa vade satışları uzun vade tezini de kapatır.</div>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="label">Fiyat <span class="tag3 v">VERİ</span></div><div class="value num">$247.51 <span style="font-size:0.7rem;color:var(--bear)">−%0.99</span></div><div style="font-size:0.62rem;color:var(--muted)">21 Tem 19:42 itibarıyla</div></div>
+      <div class="stat"><div class="label">52H Aralık</div><div class="value num">196.00 – 278.56</div></div>
+      <div class="stat"><div class="label">RSI(14)</div><div class="value num">51.3 — nötr</div></div>
+      <div class="stat"><div class="label">MACD</div><div class="value num">+0.80 · hist +1.14 ▲</div></div>
+      <div class="stat"><div class="label">50G / 200G MA</div><div class="value num">251.63 altı / 234.21 üstü</div></div>
+      <div class="stat"><div class="label">Sonraki Bilanço</div><div class="value num">30 Tem 2026 ✓</div></div>
+    </div>
+
+    
+    <div class="viz-grid">
+      <div class="viz" style="border-top:3px solid var(--base)">
+        <h4>🔭 İleri Kazanç Konsensüsü <span class="tag3 v">VERİ (konsensüs)</span></h4>
+        <table class="insiders" style="margin-top:0.2rem">
+          <tr><th>Yıl</th><th>EPS düşük</th><th>EPS ort.</th><th>EPS yüksek</th><th>Analist</th></tr>
+          <tr><td class="num">2027</td><td class="num">8.46</td><td class="num"><b>10.10</b></td><td class="num">11.31</td><td class="num" style="color:var(--bull)"><b>43</b></td></tr>
+          <tr><td class="num">2028</td><td class="num">9.92</td><td class="num">13.09</td><td class="num">15.44</td><td class="num">26</td></tr>
+          <tr><td class="num">2029</td><td class="num">14.78</td><td class="num">15.59</td><td class="num">16.31</td><td class="num">24</td></tr>
+          <tr><td class="num">2030</td><td class="num">18.46</td><td class="num">19.48</td><td class="num">20.38</td><td class="num">14</td></tr>
+        </table>
+        <div class="nd" style="margin-top:0.4rem"><b>Bu tablo ne?</b> Uzmanların, şirketin gelecek yıllarda <b>hisse başına ne kadar kâr</b> edeceğine dair tahminleri. "EPS" = hisse başına kâr.
+        <span class="fp">→ Neden önemli: Uzun vadede hisse fiyatını belirleyen şey kârdır. Kâr artarsa fiyat artar.</span>
+        <span class="fp">→ Gelecek fiyat için: 2027'de <b>$10.10</b> kâr bekleniyor. Bugünkü fiyat ($247.51) bunun <b>24.5 katı</b>. Eğer bu kâr gerçekleşir ve piyasa yine ~27 kat ödemeye razı olursa fiyat <b>$273</b> olur — 12 aylık hedefimiz buradan çıkıyor.</span>
+        <span class="fp">→ "Düşük/Yüksek" sütunları: Analistlerin en karamsar ve en iyimser tahmini. <b>Arası ne kadar genişse gelecek o kadar belirsiz.</b> 2028'de $9.92 ile $15.44 arası var — yani o yıl için görüş çok dağınık.</span>
+        <span class="fp">→ "Analist" sütunu: Kaç uzmanın tahmin verdiği. 2027 için <b>43 kişi</b> (güvenilir), 2030 için sadece 14 (o yüzden uzak yıllara az güven).</span></div>
+      </div>
+      <div class="viz" style="border-top:3px solid var(--accent)">
+        <h4>📊 Konumlanma — Short Interest <span class="tag3 v">VERİ</span></h4>
+        <table class="insiders" style="margin-top:0.2rem">
+          <tr><th>Tarih</th><th>Açık pozisyon</th><th>Ort. hacim</th><th>Kapanma günü</th></tr>
+          <tr><td class="num">30 Haz 26</td><td class="num">100.3M</td><td class="num">81.6M</td><td class="num">1.23</td></tr>
+          <tr><td class="num">15 Haz 26</td><td class="num">98.9M</td><td class="num">43.9M</td><td class="num">2.25</td></tr>
+          <tr><td class="num">29 May 26</td><td class="num">92.5M</td><td class="num">38.1M</td><td class="num">2.43</td></tr>
+          <tr><td class="num">15 May 26</td><td class="num">104.3M</td><td class="num">39.8M</td><td class="num">2.62</td></tr>
+        </table>
+        <div class="nd" style="margin-top:0.4rem"><b>Short interest ne?</b> Hissenin <b>DÜŞECEĞİNE</b> bahse girenlerin miktarı. Bu kişiler hisseyi ödünç alıp satar, sonra ucuza geri alıp iade ederek kâr etmeyi umar.
+        <span class="fp">→ Neden bakılır: Bu sayı <b>çok yüksekse</b> (hisselerin %10'undan fazlası) ve fiyat yükselmeye başlarsa, bu kişiler zararı durdurmak için panikle geri almak zorunda kalır → fiyat daha da fırlar. Buna "short squeeze" denir, sert yükselişler yaratır.</span>
+        <span class="fp">→ AMZN'de durum: Hisselerin <b>sadece %0.93'ü</b> açıkta. Yani <b>böyle bir patlama potansiyeli YOK.</b> Ama madalyonun diğer yüzü de iyi haber: kimse bu hisseye ağır şekilde karşı bahis oynamıyor — <b>piyasada güçlü bir düşüş beklentisi de yok.</b></span>
+        <span class="fp">→ "Kapanma günü" ne demek: Bu bahislerin tamamının kapanması kaç gün sürer. <b>1.23 gün</b> = çok kolay çıkarlar, fiyat üzerinde baskı yaratmazlar. (5 günün üstü olsaydı dikkat etmek gerekirdi.)</span>
+        <span class="fp">→ Trend: Mayıs'tan bu yana hafif artmış (92.5M→100.3M). Fiyat düşüşüyle uyumlu, endişe verecek bir sıçrama değil.</span></div>
+      </div>
+      <div class="viz" style="border-top:3px solid var(--muted)">
+        <h4>📋 Analist Not Değişiklikleri <span class="tag3 v">VERİ</span></h4>
+        <div class="ema-stack" style="font-size:0.72rem">
+          <div class="ema-row"><span>16 Tem · Keybanc</span><span class="num">Overweight → korundu</span></div>
+          <div class="ema-row"><span>15 Tem · Citizens</span><span class="num">Mkt Outperform → korundu</span></div>
+          <div class="ema-row"><span>08 Tem · TD Cowen</span><span class="num">Buy → korundu</span></div>
+          <div class="ema-row"><span>02 Tem · Wells Fargo</span><span class="num">Overweight → korundu</span></div>
+        </div>
+        <div class="gauge-val" style="margin-top:0.4rem;font-size:0.85rem">Son 14 kaydın <b>tamamı "maintain"</b></div>
+        <div class="nd"><b>Bu ne?</b> Bankaların ve aracı kurumların hisse için verdiği tavsiye (Al / Tut / Sat) ve bunu son dönemde <b>değiştirip değiştirmedikleri</b>. "Overweight" ve "Buy" = al tavsiyesi. "Korundu" = fikirlerini değiştirmediler.
+        <span class="fp">→ Neden önemli: Bir <b>yükseltme</b> (örn. Tut→Al) genelde fiyatı kısa vadede yukarı iter, çünkü o bankanın müşterileri alıma geçer. <b>Düşürme</b> ise aşağı iter. Bunlar en hızlı etki eden katalizörlerdendir.</span>
+        <span class="fp">→ AMZN'de durum: Son 14 kaydın <b>tamamı "korundu"</b> — tek bir yükseltme veya düşürme yok. Yani <b>hiçbir uzman fikrini değiştirmemiş.</b></span>
+        <span class="fp">→ Gelecek fiyat için: Analistler <b>beklemede</b>. 30 Temmuz bilançosunu görmeden hareket etmeyecekler. Bu demektir ki <b>kısa vadede bu taraftan ne itiş ne de çekiş var</b> — fiyatı hareket ettirecek şey bilanço rakamları olacak.</span></div>
+      </div>
+    </div>
+
+    <div class="chartbox"><svg viewBox="0 0 680 300" role="img" aria-label="AMZN son 1 yil fiyat grafigi">
+  <rect x="48" y="148.8" width="607" height="15.2" fill="var(--bull)" opacity="0.16"/>
+  <rect x="48" y="100.8" width="607" height="10.1" fill="var(--bear)" opacity="0.13"/>
+  <line x1="48" y1="46.3" x2="655" y2="46.3" stroke="var(--line)" stroke-dasharray="5 4"/>
+  <text x="51" y="42" font-size="9" fill="var(--muted)">52H zirve $278.56 (May)</text>
+  <line x1="48" y1="254.8" x2="655" y2="254.8" stroke="var(--line)" stroke-dasharray="5 4"/>
+  <text x="51" y="251" font-size="9" fill="var(--muted)">52H dip $196.00</text>
+  <line x1="48" y1="158.3" x2="655" y2="158.3" stroke="var(--base)" stroke-dasharray="2 3" opacity="0.75"/>
+  <text x="565" y="169" font-size="9" fill="var(--base)">200G MA $234.21</text>
+  <polyline points="48,170.7 60,161.9 72,215.3 84,190.9 96,165.2 108,174.2 119,180.7 131,148.1 143,158.7 155,192.4 167,195.3 179,189.7 191,203.3 203,189.1 215,170.9 227,120.2 238,120.7 250,187.8 262,169.8 274,162.9 286,164.5 298,191.0 310,162.9 322,177.8 334,125.1 346,145.9 357,147.7 369,136.2 381,222.7 393,241.8 405,223.1 417,222.7 429,208.5 441,206.3 453,226.5 465,223.8 476,191.1 488,122.2 500,104.9 512,85.5 524,55.3 536,67.6 548,80.5 560,57.8 572,108.9 584,139.9 595,132.6 607,162.2 619,133.2 631,125.2 643,118.5 655,124.8" fill="none" stroke="var(--accent)" stroke-width="2.2"/>
+  <circle cx="655" cy="124.7" r="4.5" fill="var(--ink)"/>
+  <text x="600" y="117" font-size="11" font-weight="700" fill="var(--ink)">$247.51</text>
+  <text x="51" y="159" font-size="9" fill="var(--bull)" font-weight="700">AL bolgesi $232-238 (200G MA + 4 dokunus)</text>
+  <text x="51" y="109" font-size="9" fill="var(--bear)" font-weight="700">Direnc / 1. satis kademesi $253-257</text>
+  <line x1="48" y1="285" x2="655" y2="285" stroke="var(--line)"/>
+  <text x="48" y="298" font-size="10" fill="var(--muted)">Tem&#39;25</text><text x="196" y="298" font-size="10" fill="var(--muted)">Eki&#39;25</text><text x="344" y="298" font-size="10" fill="var(--muted)">Oca&#39;26</text><text x="492" y="298" font-size="10" fill="var(--muted)">Nis&#39;26</text><text x="620" y="298" font-size="10" fill="var(--muted)">Tem&#39;26</text>
+</svg></div>
+    <div class="cap"><span class="tag3 v">VERİ</span> Son 1 yıl — FMP günlük kapanış serisinden çizildi (haftalık örnekleme) · yeşil bant = AL bölgesi · kırmızı bant = direnç/1. satış kademesi</div>
+
+    <div class="viz-grid">
+      <div class="viz">
+        <h4>RSI (14) — Momentum <span class="tag3 v">VERİ</span></h4>
+        <div class="gauge" style="background:linear-gradient(90deg,var(--bull) 0 30%,var(--line) 30% 70%,var(--bear) 70% 100%)"><div class="gauge-pin" style="left:51.3%"></div></div>
+        <div class="gauge-lbls"><span>0 · aşırı satım</span><span>50</span><span>aşırı alım · 100</span></div>
+        <div class="gauge-val num">51.3 <span style="font-size:0.7rem;color:var(--muted)">tam nötr — yön arıyor, aşırılık yok</span></div>
+        <div class="nd"><b>Ne işine yarar:</b> Hissenin aşırı alınıp alınmadığını ölçer. <b>70 üstü</b> = herkes almış, düşüş riski var. <b>30 altı</b> = herkes satmış, tepki yükselişi gelebilir.
+        <span class="fp">→ Sonuç: 51.3 tam ortada. RSI şu an <b>"henüz bir şey söylemiyorum"</b> diyor — ne ucuzluk fırsatı ne tepe uyarısı. Karar için diğer göstergelere bakmak gerekiyor.</span></div>
+      </div>
+      <div class="viz">
+        <h4>EMA Dizilimi — Trend</h4>
+        <div class="ema-stack">
+          <div class="ema-row price"><span>Fiyat</span><span class="num">$247.51</span></div>
+          <div class="ema-row"><span>EMA 20</span><span class="num">$246.29 <span class="ema-ok">✓ üstünde</span></span></div>
+          <div class="ema-row"><span>EMA 50</span><span class="num">$246.40 <span class="ema-ok">✓ üstünde</span></span></div>
+          <div class="ema-row"><span>50G SMA</span><span class="num">$251.63 <span style="color:var(--bear)">✗ altında</span></span></div>
+          <div class="ema-row"><span>200G SMA</span><span class="num">$234.21 <span class="ema-ok">✓ üstünde</span></span></div>
+        </div>
+        <div class="gauge-val" style="color:var(--accent)">Karışık — ana trend yukarı, kısa vade düzeltmede</div>
+        <div class="nd"><b>Ne işine yarar:</b> "Ortalama" = son X günün ortalama fiyatı. Fiyat ortalamanın üstündeyse o vadede yön <b>yukarı</b>, altındaysa <b>aşağı</b> kabul edilir. 200 günlük = ana trend, 50 günlük = son birkaç ay.
+        <span class="fp">→ Sonuç: Fiyat 200 günlüğün <b>ÜSTÜNDE</b> (ana trend hâlâ sağlıklı ✓) ama 50 günlüğün <b>ALTINDA</b> (son aylarda zayıflamış ✗). Yani <b>"uzun vadede iyi, kısa vadede toparlanmaya çalışıyor."</b></span>
+        <span class="fp">→ Nasıl kullanırım: <b>$234 kırılırsa</b> (200 günlük) ana trend bozulur → çıkış düşünülür. <b>$251.63 geri alınırsa</b> (50 günlük) kısa vade de düzelir → hisse güç kazanır.</span></div>
+      </div>
+      <div class="viz">
+        <h4>MACD (12,26,9) <span class="tag3 v">VERİ</span></h4>
+        <div class="ema-stack">
+          <div class="ema-row"><span>MACD</span><span class="num">+0.7996</span></div>
+          <div class="ema-row"><span>Sinyal</span><span class="num">−0.3378</span></div>
+          <div class="ema-row"><span>Histogram</span><span class="num" style="color:var(--bull)">+1.14 ▲</span></div>
+        </div>
+        <div class="gauge-val" style="color:var(--bull)">Sıfır ÜSTÜNDE yukarı kesişim — raporun en güçlü boğa sinyali</div>
+        <div class="nd"><b>Ne işine yarar:</b> Fiyatın <b>hızının</b> yön değiştirip değiştirmediğini yakalar. Genelde fiyatın kendisinden <b>önce</b> sinyal verir — bu yüzden erken uyarı aracıdır.
+        <span class="fp">→ Sonuç: Yeni <b>yukarı kesişim</b> yaptı ve sıfırın üstünde. Bu, düşüş hızının kesildiği ve yukarı dönüşün başladığı anlamına gelir. <b>Raporun en olumlu teknik sinyali bu.</b></span>
+        <span class="fp">→ Nasıl kullanırım: Tek başına "hemen al" demek değil. Ama <b>"düşüş bitti mi?"</b> sorusuna <b>"muhtemelen evet"</b> diyor. Fiyat $232-238 desteğine gelirse, bu sinyal oradan alımı destekler.</span></div>
+      </div>
+      <div class="viz">
+        <h4>Bollinger Konumu (20, 2σ)</h4>
+        <div class="gauge" style="background:var(--line)"><div class="gauge-pin" style="left:66%"></div></div>
+        <div class="gauge-lbls"><span class="num">Alt 229.67</span><span class="num">Orta 243.07</span><span class="num">Üst 256.47</span></div>
+        <div class="gauge-val num">Üst yarı <span style="font-size:0.7rem;color:var(--muted)">orta bandın üstünde, üst banda %3.6 mesafe</span></div>
+        <div class="nd"><b>Ne işine yarar:</b> Fiyatın <b>normal oynama aralığının</b> neresinde olduğunu gösterir. Alt banda yakın = ucuz taraf, üst banda yakın = pahalı taraf.
+        <span class="fp">→ Sonuç: Üst yarıdasın, tavana sadece <b>%3.6</b> kalmış. Yani <b>kısa vadede yükselme alanı dar.</b> Bu da "şimdi alma, geri çekilmeyi bekle" görüşünü destekliyor.</span></div>
+      </div>
+    </div>
+
+    <div class="note" style="margin-top:0.4rem"><span class="warn">🧭 DÖRT GÖSTERGENİN ORTAK SONUCU — kısaca</span><br><br>
+    <b>1. Yön yukarı</b> — fiyat uzun vadeli ortalamasının üstünde, momentum yeni yukarı döndü. <b>Bu yüzden elindekini satma.</b><br>
+    <b>2. Ama konum kötü</b> — fiyat kısa vadeli tavanına çok yakın (%3.6), RSI nötr, 50 günlük ortalamanın altında. <b>Bu yüzden şimdi alma.</b><br>
+    <b>3. Beklenecek iki şey var:</b> ya fiyat <b>$232-238</b>'e çekilir (ideal alım) ya da <b>$251-257</b>'yi güçlü şekilde geçer (yukarı teyidi). İkisinden biri olana kadar acele yok.<br>
+    <b>4. Tehlike çizgisi $234</b> — buranın altına inilirse ana trend bozulur ve tüm teknik tablo değişir.</div>
+
+
+    <div class="viz" style="border-top:3px solid var(--accent);margin:1rem 0">
+      <h4>📊 Hacim Profili — Hangi Fiyatta Kaç Alıcı/Satıcı Var? <span class="tag3 v">VERİ</span></h4>
+      <div class="cap" style="margin:0 0 0.6rem">Son 6 ayda hangi fiyat bölgelerinde <b>ne kadar yoğun işlem döndüğü</b>. Çubuk uzunsa orada çok el değiştirmiş, kısaysa oradan hızlı geçilmiş demektir.</div>
+      <div style="display:grid;grid-template-columns:88px 1fr 210px;gap:0.6rem;align-items:center;padding:0.32rem 0;font-size:0.76rem">
+          <span class="num">$265–275</span>
+          <div style="height:16px;background:var(--line);border-radius:4px;overflow:hidden"><div style="width:54%;height:100%;background:var(--bear);opacity:0.85"></div></div>
+          <span style="line-height:1.3">🔴 <b style="color:var(--bear)">SATICI DUVARI</b><br><span style="font-size:0.66rem;color:var(--muted)">gerçek tavan — asıl satıcılar burada</span></span>
+        </div>
+        <div style="display:grid;grid-template-columns:88px 1fr 210px;gap:0.6rem;align-items:center;padding:0.32rem 0;font-size:0.76rem">
+          <span class="num">$250–265</span>
+          <div style="height:16px;background:var(--line);border-radius:4px;overflow:hidden"><div style="width:32%;height:100%;background:var(--accent);opacity:0.85"></div></div>
+          <span style="line-height:1.3">🟡 <b style="color:var(--accent)">İNCE BÖLGE</b><br><span style="font-size:0.66rem;color:var(--muted)">kimse beklemiyor, fiyat hızlı geçer</span></span>
+        </div>
+        <div style="display:grid;grid-template-columns:88px 1fr 210px;gap:0.6rem;align-items:center;padding:0.32rem 0;font-size:0.76rem">
+          <span class="num" style="font-weight:800">$245–250</span>
+          <div style="height:16px;background:var(--line);border-radius:4px;overflow:hidden"><div style="width:100%;height:100%;background:var(--ink);opacity:0.85"></div></div>
+          <span style="line-height:1.3">⚫ <b style="color:var(--ink)">ŞU AN BURADA</b><br><span style="font-size:0.66rem;color:var(--muted)">fiyat $247.51</span></span>
+        </div>
+        <div style="display:grid;grid-template-columns:88px 1fr 210px;gap:0.6rem;align-items:center;padding:0.32rem 0;font-size:0.76rem">
+          <span class="num">$230–245</span>
+          <div style="height:16px;background:var(--line);border-radius:4px;overflow:hidden"><div style="width:78%;height:100%;background:var(--bull);opacity:0.85"></div></div>
+          <span style="line-height:1.3">🟢 <b style="color:var(--bull)">BÜYÜK ALICI YASTIĞI</b><br><span style="font-size:0.66rem;color:var(--muted)">alım bölgemiz ($232-238) burada ⭐</span></span>
+        </div>
+        <div style="display:grid;grid-template-columns:88px 1fr 210px;gap:0.6rem;align-items:center;padding:0.32rem 0;font-size:0.76rem">
+          <span class="num">$215–230</span>
+          <div style="height:16px;background:var(--line);border-radius:4px;overflow:hidden"><div style="width:18%;height:100%;background:var(--muted);opacity:0.85"></div></div>
+          <span style="line-height:1.3">⚪ <b style="color:var(--muted)">BOŞLUK</b><br><span style="font-size:0.66rem;color:var(--muted)">destek zayıf, kırılırsa hızlı düşer</span></span>
+        </div>
+        <div style="display:grid;grid-template-columns:88px 1fr 210px;gap:0.6rem;align-items:center;padding:0.32rem 0;font-size:0.76rem">
+          <span class="num">$195–215</span>
+          <div style="height:16px;background:var(--line);border-radius:4px;overflow:hidden"><div style="width:70%;height:100%;background:var(--bull);opacity:0.85"></div></div>
+          <span style="line-height:1.3">🟢 <b style="color:var(--bull)">DERİN TABAN</b><br><span style="font-size:0.66rem;color:var(--muted)">eski birikim bölgesi (Şubat-Nisan)</span></span>
+        </div>
+        
+      <div class="note" style="margin-top:0.8rem"><span class="warn">💡 BU GRAFİKTEN ÇIKAN 4 SONUÇ</span><br><br>
+      <b>1. Aşağısı kalabalık, yukarısı boş.</b> Hacmin <b>%65'i bugünkü fiyatın altında</b> — yani aşağıda çok sayıda yatırımcının maliyeti var, düşüşlerde alıcı çıkması beklenir. Yukarıda ise sadece %23 — <b>satış baskısı zayıf.</b><br><br>
+      <b>2. Alım planımız doğrulandı.</b> $230-245 bölgesi grafiğin en kalın alıcı yastığı ve bizim beklediğimiz giriş ($232-238) tam oraya denk geliyor. <b>Rastgele bir seviye değil — orada gerçek alıcı kütlesi var.</b><br><br>
+      <b>3. $250-265 arası bir "hava boşluğu".</b> Bu aralıkta çok az işlem dönmüş. Fiyat $250'yi geçerse <b>frenleyecek bir şey yok</b> — hızla $265'e koşabilir. Bu yüzden $257 kırılımı önemli bir sinyal.<br><br>
+      <b>4. Asıl tavan $265-275.</b> Orada büyük satıcı kütlesi var. Fiyat oraya ulaşsa bile aşması zor olur. <b>Kısa vadeli satış hedefimizi ($265-270) tam oraya koymamızın sebebi bu.</b><br><br>
+      <b>📌 Pratik özet:</b> Aşağı düşmek zor (kalın destek), $250-265 arası hızlı geçilir (boşluk), $265 üstü ise duvar. Yani <b>fiyatın $232-265 arasında dolaşması en olası senaryo</b> — bu da bizim 3 aylık tahminimizle ($220-285) uyumlu.</div>
+      <div class="cap" style="margin-top:0.5rem">⚠️ Bu <b>canlı emir defteri değil</b> (o veri abonelik gerektiriyor, şu an kapalı). Bu, son 6 ayda <b>gerçekleşmiş işlemlerin</b> fiyata göre dağılımı — destek/direnç tespiti için pratikte <b>daha güvenilirdir</b>, çünkü bekleyen emirler saniyede değişir, gerçekleşmiş işlemler kalıcı iz bırakır. Çubuklar her $5'lik dilimdeki <b>ortalama yoğunluğa</b> göre ölçeklendi (geniş bölgeler haksız avantaj almasın diye).</div>
+    </div>
+
+    <!-- ═══ DERİN ANALİZ ═══ -->
+    <div class="dd">
+      <h3>🔬 Derin Analiz — Analist Katmanı</h3>
+
+      <h3 style="border-bottom-width:1px;font-size:0.85rem">1 · İş Modeli</h3>
+      <div class="ema-stack" style="font-size:0.78rem">
+        <div class="ema-row"><span>TTM Gelir</span><span class="num">~$743Mr <span class="tag3 c">ÇIKARIM</span> (EV/Satış 3.73x'ten türetildi)</span></div>
+        <div class="ema-row"><span>AWS büyümesi</span><span class="num" style="color:var(--bull)">%28 (son çeyrek — 15 çeyreğin en iyisi) <span class="tag3 v">VERİ</span></span></div>
+        <div class="ema-row"><span>AWS sözleşmeli backlog</span><span class="num" style="color:var(--bull)">$364Mr <span class="tag3 v">VERİ</span></span></div>
+        <div class="ema-row"><span>Trainium (kendi AI çipi)</span><span class="num" style="color:var(--bull)">$20Mr yıllık hız · $225Mr taahhüt · üç haneli büyüme <span class="tag3 v">VERİ</span></span></div>
+        <div class="ema-row"><span>Segment % kırılımı</span><span class="num">Doğrulanamadı (FMP segment ucu bu oturumda çekilmedi)</span></div>
+      </div>
+      <div class="cap">Üç ayaklı model: perakende (düşük marj, nakit döngüsü motoru), AWS (kâr havuzu), reklam. <b>Nakit dönüşüm döngüsü −50.6 gün</b> <span class="tag3 v">VERİ</span> — tedarikçiler işletmeyi finanse ediyor, bu yapısal bir avantaj. Kritik nokta: kâr artık AWS'e bağlı ve AWS'in büyümesi Trainium + Anthropic ekosistemine bağlanıyor.</div>
+
+      <h3 style="border-bottom-width:1px;font-size:0.85rem">2 · Finansal Sağlık — <span style="color:var(--bear)">raporun en önemli bulgusu</span></h3>
+      <div class="ema-stack" style="font-size:0.78rem">
+        <div class="ema-row"><span>İşletme nakit akışı (OCF)</span><span class="num">~$149Mr <span class="tag3 c">ÇIKARIM</span></span></div>
+        <div class="ema-row"><span>Capex</span><span class="num" style="color:var(--bear)">~$151Mr — <b>OCF'i AŞIYOR</b> (capex/OCF 1.017) <span class="tag3 v">VERİ</span></span></div>
+        <div class="ema-row price"><span><b>Serbest nakit akışı (FCF)</b></span><span class="num" style="color:var(--bear)"><b>~−$2.5Mr → NEGATİF</b> (FCF verimi −%0.09) <span class="tag3 v">VERİ</span></span></div>
+        <div class="ema-row"><span>Capex / Gelir</span><span class="num" style="color:var(--bear)">%20.3 — olağanüstü sermaye yoğunluğu <span class="tag3 v">VERİ</span></span></div>
+        <div class="ema-row"><span>Net borç / EBITDA</span><span class="num" style="color:var(--bull)">0.57x — çok düşük kaldıraç <span class="tag3 v">VERİ</span></span></div>
+        <div class="ema-row"><span>Kazanç kalitesi (OCF/Net kâr)</span><span class="num" style="color:var(--bull)">1.64 — kazançlar nakitle destekli <span class="tag3 v">VERİ</span></span></div>
+        <div class="ema-row"><span>ROE / ROIC</span><span class="num">%23.3 / %9.6 <span class="tag3 v">VERİ</span></span></div>
+        <div class="ema-row"><span>Borçlanma gücü</span><span class="num" style="color:var(--bull)">$25Mr tahvil, 40 yıl vade, hazineye &lt;150bp fark <span class="tag3 v">VERİ</span></span></div>
+      </div>
+      <div class="cap"><b>Okuma:</b> AMZN bir capex süper-döngüsünün içinde — nakit üretiyor ama hepsini (ve fazlasını) veri merkezine gömüyor. Bilanço bunu kaldırır (0.57x kaldıraç, ucuz 40 yıllık borç). Risk finansal değil, <b>getiri riski</b>: bu $200Mr geri dönmezse hem kazanç hem çarpan aynı anda düşer.</div>
+
+      <h3 style="border-bottom-width:1px;font-size:0.85rem">3 · Değerleme</h3>
+      <div class="note" style="margin-top:0.4rem"><b>⚠️ Neden klasik DCF kullanılmadı:</b> AMZN'in serbest nakit akışı şu an <b>negatif</b>. FCF tabanlı iskonto modeli bu girdiyle anlamsız sonuç üretiyor (test edildi: negatif hisse değeri). Bunun yerine <b>normalize kazanç × çarpan</b> yöntemi kullanıldı — varsayımlar aşağıda açık. <span class="tag3 c">ÇIKARIM</span></div>
+      <div class="ema-stack" style="font-size:0.78rem;margin-top:0.5rem">
+        <div class="ema-row"><span><b>Emsal ileri F/K</b> (aynı kaynak, 19 Tem)</span><span class="num">META 18.7x · MSFT 20.7x · GOOGL 25x · <b>AMZN 29x</b> <span class="tag3 v">VERİ</span></span></div>
+        <div class="ema-row"><span>AMZN TTM F/K</span><span class="num">29.3x (kazanç verimi %3.42'den) <span class="tag3 v">VERİ</span></span></div>
+        <div class="ema-row"><span>EV/FCF</span><span class="num">Anlamsız (negatif FCF) — kullanılmadı</span></div>
+      </div>
+      <div style="position:relative;height:74px;margin:0.9rem 0 0.4rem">
+  <div style="position:absolute;top:26px;left:3.2%;width:92.6%;height:14px;border-radius:7px;background:linear-gradient(90deg,var(--bear),var(--accent),var(--bull));opacity:0.85"></div>
+  <div style="position:absolute;top:18px;left:35.5%;width:3px;height:30px;background:var(--ink);transform:translateX(-50%)"></div>
+  <div style="position:absolute;top:0;left:35.5%;transform:translateX(-50%);font-size:0.7rem;font-weight:800;white-space:nowrap">▼ $247.51</div>
+  <div style="position:absolute;top:46px;left:3.2%;transform:translateX(-50%);font-size:0.64rem;color:var(--bear);font-weight:700;white-space:nowrap">Ayı $186</div>
+  <div style="position:absolute;top:46px;left:48.9%;transform:translateX(-50%);font-size:0.64rem;color:var(--accent);font-weight:700;white-space:nowrap">Baz $273</div>
+  <div style="position:absolute;top:46px;left:95.8%;transform:translateX(-50%);font-size:0.64rem;color:var(--bull);font-weight:700;white-space:nowrap">Boğa $362</div>
+</div>
+      <div class="ema-stack" style="font-size:0.75rem">
+        <div class="ema-row"><span><b>Ayı $186</b></span><span>2027 EPS <b>$8.46</b> (konsensüs ALT ucu) × 22x — AWS %25 altına iner, capex getirisi gecikir, çarpan MSFT seviyesine sıkışır</span></div>
+        <div class="ema-row"><span><b>Baz $273</b></span><span>2027 EPS <b>$10.10</b> (43 analistin ORTALAMASI) × 27x — konsensüs gerçekleşir, çarpan hafif normalleşir</span></div>
+        <div class="ema-row"><span><b>Boğa $362</b></span><span>2027 EPS <b>$11.31</b> (konsensüs ÜST ucu) × 32x — AWS hızlanır, Trainium ölçeklenir, Anthropic halka arzı payı işaretler</span></div>
+      </div>
+      <div class="cap"><b>⚡ Yenilik:</b> EPS ayağı artık benim tahminim değil — <b>43 analistin 2027 konsensüs dağılımı</b> <span class="tag3 v">VERİ (konsensüs)</span>. Sadece çarpan varsayımı <span class="tag3 c">ÇIKARIM</span>.<br>
+      <b>Sonuç:</b> Baz $273 → mevcut fiyattan <b>+%10.3</b>. Kritik nüans: 2027 konsensüsüne göre ileri F/K <b>24.5x</b> — takip eden 29.3x'ten belirgin düşük. Yani "pahalı" etiketi ileriye bakınca yumuşuyor, <b>ama bu konsensüsün gerçekleşmesine bağlı</b>. Analist konsensüs hedefi $309 hâlâ benim bazımın üstünde.</div>
+      <div class="note" style="margin-top:0.6rem"><span class="warn">💡 BU DEĞERLEME BİLGİLERİNDEN ÇIKAN SONUÇ — kısaca</span><br><br>
+      <b>1. Bugünkü fiyat "adil, hafif pahalı".</b> Hesaplanan gerçek değer $273, fiyat $247.51 → yaklaşık <b>%10 yukarı alan</b> var. Az değil ama bol da değil — hata payı bırakmıyor.<br>
+      <b>2. Rakiplerine göre pahalı, ama kendi geleceğine göre değil.</b> Bugün kârının 29 katından işlem görüyor; gelecek yılın beklenen kârına göre bu <b>24.5 kata</b> düşüyor. Yani <b>şirket büyüdükçe "pahalılık" kendiliğinden azalıyor</b> — tabii kâr beklendiği gibi artarsa.<br>
+      <b>3. Gerçekten cazip olduğu yer $232-238.</b> Orada hem teknik destek var hem de değerleme yaklaşık 27 kata iner. <b>Alım listesine bu aralığı yaz.</b><br>
+      <b>4. Yukarı potansiyel aşağı riskten büyük ama ikisi de aynı şeye bağlı:</b> iyi senaryo $362 (+%46), kötü senaryo $186 (−%25). Her ikisi de <b>şirketin dev yatırımlarının geri dönüp dönmemesine</b> bağlı. Bu tek soru her şeyi belirliyor.<br><br>
+      <b>📌 Pratik karar:</b> Elinde varsa <b>tut</b>. Yoksa <b>$232-238'i bekle</b>. Şimdi almak için ne fiyat yeterince cazip, ne de belirsizlik yeterince azalmış (bilanço 9 gün sonra).</div>
+
+      <h3 style="border-bottom-width:1px;font-size:0.85rem">4 · Makro &amp; Rekabet</h3>
+      <div class="ema-stack" style="font-size:0.78rem">
+        <div class="ema-row"><span>Bulut pazar payı</span><span class="num" style="color:var(--bear)">MSFT ve GOOGL pay alıyor; AWS hâlâ en büyük <span class="tag3 v">VERİ</span></span></div>
+        <div class="ema-row"><span>5 yıllık hisse performansı (Jassy dönemi)</span><span class="num" style="color:var(--bear)">%6.8 yıllık — S&amp;P 500 ve Nasdaq-100'ün altında <span class="tag3 v">VERİ</span></span></div>
+        <div class="ema-row"><span>Faiz duyarlılığı</span><span class="num">Azaldı — 40 yıllık ucuz borç kilitlendi <span class="tag3 c">ÇIKARIM</span></span></div>
+        <div class="ema-row"><span>Sektör teması</span><span class="num" style="color:var(--bear)">Büyük şirketler AI bütçelerini kısıyor (AMZN dahil) <span class="tag3 v">VERİ</span></span></div>
+      </div>
+      <div class="cap"><b>EN BÜYÜK TEK TEHDİT:</b> AI capex silahlanma yarışının getirisiz kalması. AMZN aynı anda hem <i>müşteri</i> (kendi AI harcamasını kısıyor) hem <i>satıcı</i> (AWS kapasitesi satıyor) — sektör harcamayı kısarsa iki taraftan birden vurulur.</div>
+
+      <h3 style="border-bottom-width:1px;font-size:0.85rem">5 · Katalizörler</h3>
+      <div class="ema-stack" style="font-size:0.78rem">
+        <div class="ema-row"><span><b>Bariz:</b> Q2 bilançosu 30 Temmuz</span><span class="num">EPS bek. $1.82 · gelir bek. $196.7Mr <span class="tag3 v">VERİ</span></span></div>
+        <div class="ema-row"><span><b>Gizli 1:</b> Anthropic halka arzı (~Ekim, $1.2T değerleme)</span><span class="num" style="color:var(--bull)">AMZN payı %15-20 → $180-240Mr <span class="tag3 v">VERİ</span></span></div>
+        <div class="ema-row"><span><b>Gizli 2:</b> Trainium çip işi</span><span class="num" style="color:var(--bull)">~$50Mr değerinde iş, $225Mr taahhüt <span class="tag3 v">VERİ</span></span></div>
+        <div class="ema-row"><span><b>Gizli 3:</b> $364Mr AWS backlog</span><span class="num" style="color:var(--bull)">TTM çarpanlarda görünmeyen gelir görünürlüğü <span class="tag3 v">VERİ</span></span></div>
+      </div>
+      <div class="cap"><b>Neden az fark ediliyor:</b> Anthropic payı ($180-240Mr) AMZN'in kendi piyasa değerinin <b>~%7-9'u</b> ve bilançoda maliyet bedeliyle duruyor; halka arz bunu görünür kılar. Backlog ve Trainium ise gelecek gelir — TTM F/K'ya hiç yansımıyor. Üçü de bugünkü 29.3x çarpanın "göründüğünden ucuz" olabileceği argümanının temeli.</div>
+
+      <h3 style="border-bottom-width:1px;font-size:0.85rem">6 · Riskler (şiddet sırasına göre)</h3>
+      <div class="ema-stack" style="font-size:0.78rem">
+        <div class="ema-row"><span><b>1. Capex getiri riski</b></span><span class="num" style="color:var(--bear)">FCF negatif, $200Mr taahhüt, getiri kanıtlanmadı — hem E hem P/E aynı anda düşebilir</span></div>
+        <div class="ema-row"><span><b>2. Rekabetçi pay kaybı</b></span><span class="num" style="color:var(--bear)">MSFT/GOOGL bulutta pay alıyor</span></div>
+        <div class="ema-row"><span><b>3. Değerleme</b></span><span class="num" style="color:var(--bear)">Emsal grubunun en pahalısı (29x vs 18.7-25x)</span></div>
+        <div class="ema-row"><span><b>4. Bilanço olayı (9 gün)</b></span><span class="num">Binary — capex rehberliği fiyatı tek günde %5-8 oynatabilir</span></div>
+        <div class="ema-row"><span><b>5. Konsantrasyon</b></span><span class="num">Kârın ezici çoğunluğu AWS'ten</span></div>
+        <div class="ema-row"><span><b>6. Anthropic bağımlılığı</b></span><span class="num">Hem yatırım hem müşteri — AI balonu sönerse çift taraflı darbe <span class="tag3 s">SPEKÜLASYON</span></span></div>
+      </div>
+
+      <h3 style="border-bottom-width:1px;font-size:0.85rem">7 · Yatırım Tezi</h3>
+      <div class="bbgrid">
+        <div class="bbc bl"><b style="color:var(--bull)">🐂 BOĞA TEZİ</b>
+        AWS %28 büyümeye döndü (15 çeyreğin en iyisi) ve arkasında $364Mr sözleşmeli backlog var. Trainium $20Mr yıllık hıza ulaştı, $225Mr taahhüt kilitli — AMZN AI altyapısını NVDA marjı ödemeden kendi üretiyor. Anthropic payı ($180-240Mr) piyasa değerinin ~%8'i ve halka arzla görünür olacak. Bilanço 0.57x kaldıraçla capex'i finanse edebiliyor, üstelik 40 yıllık borcu hazineye 150bp farkla satabiliyor. <b>Capex 2027'de zirve yaparsa FCF şiddetle geri döner ve çarpan yeniden değerlenir.</b></div>
+        <div class="bbc br"><b style="color:var(--bear)">🐻 AYI TEZİ</b>
+        Beş yıldır S&amp;P 500'ü yenemedi (%6.8 yıllık) ve bulutta pay kaybediyor. Serbest nakit akışı <b>negatif</b>: capex, işletme nakdini aşıyor ve gelirin %20.3'ünü yiyor. Emsal grubunun en pahalısı — META 18.7x, MSFT 20.7x, GOOGL 25x iken AMZN 29x. Sektörde AI harcamaları kısılıyor (AMZN'in kendisi bile çalışan AI bütçesini sınırlıyor). <b>AWS büyümesi %25 altına inerse kazanç ve çarpan birlikte çöker — 29x'te hata payı yok.</b></div>
+      </div>
+      <div class="note" style="margin-top:0.8rem;border-left-color:var(--ink)">
+        <span class="warn">⚖️ BOĞA MI AYI MI AĞIR BASIYOR? — Terazi</span><br>
+        <div class="cap" style="margin:0.4rem 0">Her iki tarafın kanıtlarını önem sırasına göre puanladım (4 = en güçlü kanıt). Sonuç:</div>
+
+        <div class="scale">
+          <div class="sb" style="width:50%;background:var(--bull)">🐂 BOĞA %50</div>
+          <div class="sb" style="width:50%;background:var(--bear)">AYI %50 🐻</div>
+        </div>
+        <div class="cap" style="text-align:center;margin-bottom:0.6rem"><b>Kanıtlar tam dengede — bu yüzden sinyal "AL" değil "TUT".</b></div>
+
+        <div class="bbgrid" style="margin:0.4rem 0">
+          <div class="bbc bl" style="font-size:0.72rem">
+            <b style="color:var(--bull)">🐂 Boğa kanıtları (toplam 14 puan)</b>
+            <div class="evrow"><span>AWS %28'e döndü + $364Mr backlog</span><span class="num">4/5</span></div><div class="evbar" style="width:75%;background:var(--bull)"></div>
+            <div class="evrow"><span>Trainium + Anthropic payı (~%8 piyasa değeri)</span><span class="num">4/5</span></div><div class="evbar" style="width:75%;background:var(--bull)"></div>
+            <div class="evrow"><span>Bilanço gücü (düşük borç, ucuz finansman)</span><span class="num">3/5</span></div><div class="evbar" style="width:50%;background:var(--bull)"></div>
+            <div class="evrow"><span>İleri F/K 24.5x — büyümeye göre pahalı değil</span><span class="num">3/5</span></div><div class="evbar" style="width:50%;background:var(--bull)"></div>
+            <div class="evrow"><span>Analistlerin EN DÜŞÜK hedefi bile fiyatın üstünde</span><span class="num">3/5</span></div><div class="evbar" style="width:50%;background:var(--bull)"></div>
+            <div class="evrow"><span>Haber akışı olumlu (net +7) · MACD yukarı döndü</span><span class="num">2/5</span></div><div class="evbar" style="width:33%;background:var(--bull)"></div>
+          </div>
+          <div class="bbc br" style="font-size:0.72rem">
+            <b style="color:var(--bear)">🐻 Ayı kanıtları (toplam 14 puan)</b>
+            <div class="evrow"><span><b>Serbest nakit akışı NEGATİF</b> (en güçlü kanıt)</span><span class="num">5/5</span></div><div class="evbar" style="width:100%;background:var(--bear)"></div>
+            <div class="evrow"><span>Emsallerinin en pahalısı (29x vs 18.7-25x)</span><span class="num">4/5</span></div><div class="evbar" style="width:75%;background:var(--bear)"></div>
+            <div class="evrow"><span>5 yıldır S&amp;P'yi yenemedi + bulutta pay kaybı</span><span class="num">4/5</span></div><div class="evbar" style="width:75%;background:var(--bear)"></div>
+            <div class="evrow"><span>Sektörde AI harcamaları kısılıyor</span><span class="num">3/5</span></div><div class="evbar" style="width:50%;background:var(--bear)"></div>
+            <div class="evrow"><span>Insider alımı YOK · 50G ortalamanın altında</span><span class="num">2/5</span></div><div class="evbar" style="width:33%;background:var(--bear)"></div>
+          </div>
+        </div>
+
+        <div style="border-top:2px solid var(--line);margin-top:0.7rem;padding-top:0.6rem">
+        <b>🔑 Ama asıl cevap şu: İKİSİ FARKLI ZAMANLARDA HAKLI.</b><br><br>
+        <b>🐻 Kısa vadede (0-3 ay) AYI haklı:</b> Fiyat kısa vadeli tavanına yakın, bilanço riski var, yöneticiler alım yapmıyor, şu andan giriş oranı kötü (0.5). <b>Beklenen 3 aylık getiri sadece +%2.5</b> — beklemenin maliyeti neredeyse sıfır.<br><br>
+        <b>🐂 Uzun vadede (12 ay) BOĞA haklı:</b> Backlog, Trainium ve Anthropic payı henüz fiyata girmemiş; şirket büyüdükçe pahalılık kendiliğinden azalıyor. <b>Beklenen 12 aylık getiri +%12.3.</b><br><br>
+
+        <div class="viz-grid" style="margin:0.6rem 0 0.2rem">
+          <div class="viz" style="text-align:center;border-top:3px solid var(--bull)">
+            <div class="t" style="font-size:0.62rem;text-transform:uppercase;letter-spacing:0.09em;color:var(--muted)">12 ayda fiyat bugünden YÜKSEK olma ihtimali</div>
+            <div class="bigev" style="color:var(--bull);margin-top:0.3rem">%75</div>
+            <div class="cap">Üç senaryodan ikisi (boğa %30 + baz %45) bugünkü fiyatın üstünde bitiyor</div>
+          </div>
+          <div class="viz" style="text-align:center;border-top:3px solid var(--bear)">
+            <div class="t" style="font-size:0.62rem;text-transform:uppercase;letter-spacing:0.09em;color:var(--muted)">12 ayda fiyat bugünden DÜŞÜK olma ihtimali</div>
+            <div class="bigev" style="color:var(--bear);margin-top:0.3rem">%25</div>
+            <div class="cap">Kötü senaryo $186 — dörtte bir ihtimal, ama gerçekleşirse %25 kayıp</div>
+          </div>
+          <div class="viz" style="text-align:center;border-top:3px solid var(--accent)">
+            <div class="t" style="font-size:0.62rem;text-transform:uppercase;letter-spacing:0.09em;color:var(--muted)">Matematiksel beklenti (12 ay)</div>
+            <div class="bigev" style="color:var(--accent);margin-top:0.3rem">$278</div>
+            <div class="cap"><b>+%12.3</b> · Üç senaryonun ihtimalle çarpılıp toplanmış hali. "Ortalama olarak" beklenen sonuç.</div>
+          </div>
+        </div>
+
+        <b>📌 TERAZİNİN SONUCU:</b> Kanıtlar 50/50 ama <b>matematik boğa tarafında</b> — çünkü kazanma ihtimali (%75) kaybetme ihtimalinden (%25) yüksek <b>ve</b> kazanç büyüklüğü (+%46) kayıp büyüklüğünden (−%25) fazla. <b>Bu yüzden elindekini tut.</b> Ancak kısa vadede ayı haklı olduğu için <b>yeni alımda acele etme</b> — $232-238'i bekle, orada hem terazinin hem matematiğin dediği aynı şey olur.</div>
+      </div>
+
+      <div style="margin:0.7rem 0 0.3rem"><span class="asym">ASİMETRİ: ŞU FİYATTA ZAYIF · GİRİŞ BÖLGESİNDE POZİTİF</span></div>
+      <div class="ema-stack" style="font-size:0.76rem">
+        <div class="ema-row"><span>Mevcut fiyattan ($247.51)</span><span class="num">Boğa +%46 / Ayı −%25 → <b>1.9:1</b></span></div>
+        <div class="ema-row price"><span>Giriş bölgesinden ($235)</span><span class="num" style="color:var(--bull)">Boğa +%54 / Ayı −%21 → <b>2.6:1</b></span></div>
+      </div>
+      <div class="cap" style="margin-top:0.5rem"><b>İzlenecek 5 metrik:</b> ① AWS çeyreklik büyüme oranı (%28 üstü korunuyor mu?) · ② Capex/gelir oranı (zirve işareti var mı?) · ③ FCF'in pozitife döndüğü çeyrek · ④ AWS backlog ($364Mr artıyor mu?) · ⑤ Trainium yıllık gelir hızı ($20Mr'dan yukarı mı?)</div>
+    </div>
+
+    <div class="viz-grid">
+      <div class="viz" style="border-top:3px solid var(--bull)">
+        <h4 style="color:var(--bull)">30G Boğa — %30 <span class="tag3 c">ÇIKARIM</span></h4>
+        <div class="score-big num" style="font-size:1.4rem">$262–272</div>
+        <div class="cap">30 Tem bilançosu AWS %28+ teyit eder, capex rehberliği ılımlı gelir. $253-257 direnci hacimle kırılır, MACD dönüşü doğrulanır.</div>
+      </div>
+      <div class="viz" style="border-top:3px solid var(--base)">
+        <h4 style="color:var(--base)">30G Baz — %45 <span class="tag3 c">ÇIKARIM</span></h4>
+        <div class="score-big num" style="font-size:1.4rem">$238–255</div>
+        <div class="cap">Bilanço beklentiye paralel; fiyat 200G MA ile direnç bandı arasında sıkışmaya devam eder. Bant kenarları işlem fırsatı verir.</div>
+      </div>
+      <div class="viz" style="border-top:3px solid var(--bear)">
+        <h4 style="color:var(--bear)">30G Ayı — %25 <span class="tag3 c">ÇIKARIM</span></h4>
+        <div class="score-big num" style="font-size:1.4rem">$225–235</div>
+        <div class="cap">Capex rehberliği yukarı revize edilir / marj baskısı görülür; AI harcama endişesi derinleşir, 200G MA ve Haziran dipleri test edilir.</div>
+      </div>
+    </div>
+
+    <h4 style="margin:1.4rem 0 0.2rem;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.09em;color:var(--muted);border-bottom:2px solid var(--accent);padding-bottom:0.25rem">🔮 3 / 6 / 12 Aylık Fiyat Projeksiyonu <span class="tag3 c">ÇIKARIM</span></h4>
+    <div class="chartbox"><svg viewBox="0 0 680 300" role="img" aria-label="AMZN 3-6-12 ay fiyat projeksiyonu">
+  <polygon points="62,179 215,135 370,106 625,45 625,251 370,223 215,211" fill="var(--cone-fill)"/>
+  <line x1="62" y1="179" x2="625" y2="45" stroke="var(--bull)" stroke-width="2"/>
+  <line x1="62" y1="179" x2="625" y2="149" stroke="var(--accent)" stroke-width="2.4"/>
+  <line x1="62" y1="179" x2="625" y2="251" stroke="var(--bear)" stroke-width="2"/>
+  <line x1="62" y1="143" x2="625" y2="143" stroke="var(--line)" stroke-dasharray="4 4"/>
+  <text x="65" y="139" font-size="8.5" fill="var(--muted)">52H zirve $278.56</text>
+  <circle cx="625" cy="107" r="4" fill="none" stroke="var(--base)" stroke-width="2"/>
+  <text x="529" y="110" font-size="8.5" fill="var(--base)" font-weight="700">Analist konsensüs $309</text>
+  <circle cx="62" cy="179" r="5" fill="var(--ink)"/>
+  <text x="48" y="197" font-size="10" font-weight="700" fill="var(--ink)">$247.51</text>
+  <circle cx="215" cy="135" r="3.5" fill="var(--bull)"/><text x="199" y="128" font-size="9" fill="var(--bull)" font-weight="700">$285</text>
+  <circle cx="215" cy="170" r="3.5" fill="var(--accent)"/><text x="222" y="173" font-size="9" fill="var(--accent)" font-weight="700">$255</text>
+  <circle cx="215" cy="211" r="3.5" fill="var(--bear)"/><text x="199" y="225" font-size="9" fill="var(--bear)" font-weight="700">$220</text>
+  <circle cx="370" cy="106" r="3.5" fill="var(--bull)"/><text x="354" y="99" font-size="9" fill="var(--bull)" font-weight="700">$310</text>
+  <circle cx="370" cy="151" r="3.5" fill="var(--accent)"/><text x="377" y="154" font-size="9" fill="var(--accent)" font-weight="700">$272</text>
+  <circle cx="370" cy="223" r="3.5" fill="var(--bear)"/><text x="354" y="237" font-size="9" fill="var(--bear)" font-weight="700">$210</text>
+  <circle cx="625" cy="45" r="4.5" fill="var(--bull)"/><text x="585" y="38" font-size="10" fill="var(--bull)" font-weight="700">$362</text>
+  <circle cx="625" cy="149" r="4.5" fill="var(--accent)"/><text x="633" y="152" font-size="10" fill="var(--accent)" font-weight="700">$273</text>
+  <circle cx="625" cy="251" r="4.5" fill="var(--bear)"/><text x="585" y="265" font-size="10" fill="var(--bear)" font-weight="700">$186</text>
+  <line x1="62" y1="282" x2="645" y2="282" stroke="var(--line)"/>
+  <text x="48" y="296" font-size="9.5" fill="var(--muted)">bugün</text>
+  <text x="191" y="296" font-size="9.5" fill="var(--muted)">3 ay · Eki&#39;26</text>
+  <text x="346" y="296" font-size="9.5" fill="var(--muted)">6 ay · Oca&#39;27</text>
+  <text x="597" y="296" font-size="9.5" fill="var(--muted)">12 ay · Tem&#39;27</text>
+</svg></div>
+    <table class="insiders">
+      <tr><th>Ufuk</th><th>Ayı</th><th>Baz</th><th>Boğa</th><th>Ana sürücü</th><th>±1σ akıl kontrolü</th></tr>
+      <tr>
+        <td class="num"><b>3 Ay</b><br><span style="font-size:0.65rem;color:var(--muted)">Eki 2026</span></td>
+        <td class="num" style="color:var(--bear)">$220<br><span style="font-size:0.65rem">−%11 · %25</span></td>
+        <td class="num" style="color:var(--accent)"><b>$255</b><br><span style="font-size:0.65rem">+%3 · %50</span></td>
+        <td class="num" style="color:var(--bull)">$285<br><span style="font-size:0.65rem">+%15 · %25</span></td>
+        <td style="font-size:0.72rem">30 Tem Q2 + ~Eki Q3 bilançoları · Anthropic halka arzı (~Ekim) · capex rehberliği</td>
+        <td class="num" style="font-size:0.7rem">$209–286<br><span style="color:var(--bull)">✓ üçü de bant içinde</span></td>
+      </tr>
+      <tr>
+        <td class="num"><b>6 Ay</b><br><span style="font-size:0.65rem;color:var(--muted)">Oca 2027</span></td>
+        <td class="num" style="color:var(--bear)">$210<br><span style="font-size:0.65rem">−%15 · %25</span></td>
+        <td class="num" style="color:var(--accent)"><b>$272</b><br><span style="font-size:0.65rem">+%10 · %45</span></td>
+        <td class="num" style="color:var(--bull)">$310<br><span style="font-size:0.65rem">+%25 · %30</span></td>
+        <td style="font-size:0.72rem">İki temiz çeyrek · tatil sezonu perakende · capex zirvesinin görünür olması</td>
+        <td class="num" style="font-size:0.7rem">$194–301<br><span style="color:var(--accent)">⚠ boğa +1σ sınırında</span></td>
+      </tr>
+      <tr>
+        <td class="num"><b>12 Ay</b><br><span style="font-size:0.65rem;color:var(--muted)">Tem 2027</span></td>
+        <td class="num" style="color:var(--bear)">$186<br><span style="font-size:0.65rem">−%25 · %25</span></td>
+        <td class="num" style="color:var(--accent)"><b>$273</b><br><span style="font-size:0.65rem">+%10 · %45</span></td>
+        <td class="num" style="color:var(--bull)">$362<br><span style="font-size:0.65rem">+%46 · %30</span></td>
+        <td style="font-size:0.72rem"><b>Doğrudan 2027 konsensüs EPS'ine çapalı:</b> $8.46 / $10.10 / $11.31 × 22x / 27x / 32x</td>
+        <td class="num" style="font-size:0.7rem">$171–324<br><span style="color:var(--bear)">⚠ boğa +1σ ÜSTÜNDE → düşük olasılık</span></td>
+      </tr>
+    </table>
+    <div class="note" style="margin-top:0.6rem"><span class="warn">📖 GRAFİĞE NASIL BAKILIR? — 30 saniyede oku</span><br><br>
+    <b>Soldaki siyah nokta bugünkü fiyat ($247.51).</b> Sağa doğru gittikçe zaman ilerliyor: 3 ay, 6 ay, 12 ay.<br><br>
+    <b>🟢 Yeşil çizgi (üstteki):</b> Her şey yolunda giderse fiyat buraya gider → 12 ayda <b>$362</b>.<br>
+    <b>🟤 Kahverengi çizgi (ortadaki):</b> <b>En olası yol.</b> Normal giderse fiyat buraya gider → 12 ayda <b>$273</b>. <i>Gözünü en çok buna dik.</i><br>
+    <b>🔴 Kırmızı çizgi (alttaki):</b> İşler kötü giderse → 12 ayda <b>$186</b>.<br>
+    <b>Mavi halka:</b> 43 analistin ortalama hedefi ($309) — benim orta çizgimin üstünde, yani <b>uzmanlar benden daha iyimser</b>.<br>
+    <b>Gri kesikli çizgi:</b> Son 1 yılın zirvesi ($278.56). Fiyatın oraya dönmesi bile normal senaryonun biraz üstünde bir başarı demek.<br><br>
+    <b>🔺 Huninin genişlemesi ne anlama geliyor?</b> Zaman ilerledikçe yeşil ve kırmızı birbirinden uzaklaşıyor. Bu, <b>ne kadar ileriye bakarsan o kadar az emin olabileceğini</b> gösterir. 3 ayda aralık dar ($220-285), 12 ayda çok geniş ($186-362). <b>Uzak tahminlere daha az güven.</b><br><br>
+    <b>📌 Grafiğe tek bakışta çıkan sonuç:</b> Orta çizgi <b>yukarı eğimli</b> — yani en olası senaryoda fiyat artıyor, ama <b>yavaş</b> (12 ayda +%10). Yukarı alan (yeşile kadar) aşağı alandan (kırmızıya kadar) daha geniş, yani <b>kazanma potansiyeli kaybetme riskinden büyük</b>. Ama ilk 3 ayda üç çizgi de birbirine yakın — <b>kısa vadede büyük hareket beklenmiyor</b>, bu da "acele etme" mesajını doğruluyor.</div>
+    <div class="cap" style="margin-top:0.4rem"><b>Yöntem:</b> 12 aylık senaryolar <b>43 analistin 2027 kâr beklentilerine</b> çarpan uygulanarak kuruldu; 3 ve 6 ay bunun arasına bilanço takvimine göre yerleştirildi. <b>±1σ kontrolü:</b> hissenin tarihsel oynaklığına göre bu fiyatların makul olup olmadığı test edildi. <b>12 aylık iyi senaryo ($362) bu bandın üstünde</b> — yani tarihsel olarak nadir görülen bir sıçrama gerektirir, düşük olasılıklı kabul edilmeli. <b>Analist konsensüsü $309</b> benim baz senaryomun üstünde; farkı gizlemiyorum, piyasa yatırımların geri dönüşüne benden daha çok güveniyor.</div>
+
+
+    <div class="viz" style="border-top:3px solid var(--accent);margin-bottom:1rem">
+      <h4>🕵️ Insider İşlemleri (SEC Form 4, son kayıtlar) <span class="tag3 v">VERİ</span> — Puan 5/10</h4>
+      <table class="insiders">
+        <tr><th>Tarih</th><th>Kişi / Görev</th><th>İşlem</th><th>Adet @ Fiyat</th><th>Kalan pay</th><th>10b5-1?</th></tr>
+        <tr><td class="num">01 Tem 26</td><td><b>Douglas Herrington</b> — CEO, Worldwide Amazon Stores</td><td>S-Satış</td><td class="num">1.000 @ $239.77</td><td class="num">484.527</td><td style="color:var(--muted)">Evet — rutin</td></tr>
+        <tr><td class="num">01 Haz 26</td><td>Douglas Herrington — CEO, Stores</td><td>S-Satış</td><td class="num">1.000 @ $266.19</td><td class="num">485.527</td><td style="color:var(--muted)">Evet — rutin</td></tr>
+        <tr><td class="num">21 May 26</td><td><b>Andy Jassy</b> — Başkan &amp; CEO</td><td>M-Hakediş 50.000 + S-Satış</td><td class="num">5.206 @ $261.95 · 3.600 @ $264.97</td><td class="num" style="color:var(--bull)"><b>2.206.066</b></td><td style="color:var(--muted)">Evet — rutin</td></tr>
+        <tr><td class="num">21 May 26</td><td><b>Matt Garman</b> — CEO, AWS</td><td>M-Hakediş 4.000 + S-Satış</td><td class="num">3.689 @ $264.03 · 4.257 @ $261.93</td><td class="num">25.369</td><td style="color:var(--muted)">Evet — rutin</td></tr>
+        <tr><td class="num">21 May 26</td><td>David Zapolsky — SVP · Shelley Reynolds — VP</td><td>M-Hakediş + S-Satış</td><td class="num">1 @ $265.72 · 1.600 @ $261.83</td><td class="num">51.110 · 120.543</td><td style="color:var(--muted)">Evet — rutin</td></tr>
+      </table>
+      <div class="cap" style="margin-top:0.5rem"><b>Sınıflandırma: RUTİN SATIŞ (düşük sinyal).</b> Satışların <b>%100'ü 10b5-1 planı</b> üzerinden ve hepsi 21 Mayıs hakediş tarihine bağlı — mekanik çeşitlendirme, görüş beyanı değil. <b>Küme alımı (3+ insider) veya herhangi bir açık piyasa alımı YOK.</b><br>
+      <b>Okuma:</b> Ne kırmızı bayrak ne destek. İki not: ① Jassy hâlâ <b>2,21 milyon hisse</b> tutuyor (~$547M) — ciddi "skin in the game"; ② satışlar $261-266 bandında, yani bugünkü fiyattan %6 yukarıda yapıldı — ama planlı olduğu için zamanlama sinyali sayılmaz.</div>
+    </div>
+    <div class="viz" style="border-top:3px solid var(--bear);margin-bottom:1rem">
+      <h4>⚠️ Önümüzdeki 30 Günün Riskleri</h4>
+      <div class="ema-stack" style="font-size:0.76rem">
+        <div class="ema-row"><span><b>AMZN Q2 bilançosu — 30 Temmuz</b> · EPS bek. $1.82, gelir bek. $196.7Mr <span class="tag3 v">VERİ</span></span><span class="num">binary — capex rehberliği kilit</span></div>
+        <div class="ema-row"><span><b>Mega-cap bilanço haftası</b> — GOOGL 21 Tem · TSLA 22 Tem · MSFT+META 29 Tem · AAPL 30 Tem <span class="tag3 v">VERİ</span></span><span class="num">sektör okuması, AWS rakip verisi</span></div>
+        <div class="ema-row"><span><b>AI harcama kısıtlama teması</b> — MSFT/AMZN/WMT/UBER çalışan AI bütçelerini sınırlıyor <span class="tag3 v">VERİ</span></span><span class="num">bulut talep endişesi</span></div>
+        <div class="ema-row"><span><b>Anthropic halka arzı</b> — ~Ekim, $1.2T değerleme (30 günün dışında ama söylenti akışı erken başlar) <span class="tag3 v">VERİ</span></span><span class="num">yukarı yönlü katalizör</span></div>
+        <div class="ema-row"><span><b>Petrol / İran yaptırım akışı</b> — petrol %5 sıçradı, Nasdaq sert düştü <span class="tag3 v">VERİ</span></span><span class="num">piyasa geneli risk iştahı</span></div>
+        <div class="ema-row"><span><b>FED/FOMC</b> — Temmuz sonu beklenir <span class="tag3 s">SPEKÜLASYON</span></span><span class="num">uzun vadeli varlık duyarlılığı</span></div>
+      </div>
+    </div>
+
+    <div class="viz-grid">
+      <div class="viz" style="grid-column:span 2;min-width:260px">
+        <h4>Analist Fiyat Hedefleri <span class="tag3 v">VERİ</span> — 43 uzmanın 12 aylık beklentisi</h4>
+        <div style="position:relative;height:56px;margin:0.7rem 0 0.2rem">
+          <div style="position:absolute;top:22px;left:0;right:0;height:12px;border-radius:6px;background:linear-gradient(90deg,var(--bear),var(--accent),var(--bull));opacity:0.75"></div>
+          <div style="position:absolute;top:14px;left:45.3%;width:3px;height:28px;background:var(--ink)"></div>
+          <div style="position:absolute;top:0;left:45.3%;transform:translateX(-50%);font-size:0.72rem;font-weight:800;white-space:nowrap">▼ ŞU AN $247.51</div>
+          <div style="position:absolute;top:16px;left:83.8%;width:3px;height:24px;background:var(--base)"></div>
+          <div style="position:absolute;top:40px;left:83.8%;transform:translateX(-50%);font-size:0.68rem;font-weight:700;color:var(--base);white-space:nowrap">▲ Ortalama $309</div>
+          <div style="position:absolute;top:38px;left:0;font-size:0.68rem;color:var(--bear);font-weight:700">En kötümser $175</div>
+          <div style="position:absolute;top:38px;right:0;font-size:0.68rem;color:var(--bull);font-weight:700">En iyimser $335</div>
+        </div>
+        <div class="nd" style="margin-top:1.3rem"><b>Bu çubuk ne gösteriyor:</b> 43 uzmanın bu hisse için 12 ay sonrasına verdiği hedef fiyatlar. <b>Siyah çizgi bugünkü fiyat</b>, mavi çizgi <b>uzmanların ortalaması</b>.
+        <span class="fp">→ Sonuç 1: Ortalama hedef $309, yani uzmanlar <b>%25 yukarı</b> bekliyor. <b>Hatta en kötümser uzman bile ($175) değil</b> — 43 kişiden çoğu bugünkü fiyatın üstünü işaret ediyor.</span>
+        <span class="fp">→ Sonuç 2 (daha önemli): <b>Bant çok geniş — $175 ile $335 arası.</b> En kötümserle en iyimser arasında <b>2 kat fark</b> var. Bu, uzmanların <b>kendi aralarında anlaşamadığı</b> anlamına gelir.</span>
+        <span class="fp">→ Ne yapmalı: Geniş bant = <b>düşük güvenilirlik</b>. "Analistler %25 diyor, o zaman kesin çıkar" demek yanlış olur. Bu yüzden raporun tahmin güveni puanında <b>"analist uzlaşması" en zayıf bileşen (55/100)</b>.</span></div>
+      </div>
+      <div class="viz" style="min-width:200px">
+        <h4>🕵️ Insider Özeti <span class="tag3 v">VERİ</span> — 5/10</h4>
+        <div class="gauge-val" style="color:var(--accent)">RUTİN SATIŞ — sinyal yok</div>
+        <div class="cap">Son 15 Form 4 kaydının <b>tamamı 10b5-1 planına bağlı</b> (aff_10b5_one=True) ve 21 Mayıs hakediş tarihine kilitli. <b>Açık piyasa alımı (P kodu) YOK.</b> Alarm değil, destek de değil.</div>
+      </div>
+    </div>
+
+    <div class="viz-grid">
+      <div class="viz" style="border-top:3px solid var(--bull)">
+        <h4 style="color:var(--bull)">📰 Pozitif Haberler — Skor 9/10 <span class="tag3 v">VERİ</span></h4>
+        <div class="ema-stack" style="font-size:0.72rem">
+          <div class="ema-row"><span><b>Trainium $20Mr yıllık hızda</b> — $225Mr taahhüt, üç haneli büyüme, "önseziyle değil" (Jassy)</span><span class="num">19 Tem</span></div>
+          <div class="ema-row"><span><b>Anthropic halka arzı $1.2T</b> — AMZN payı %15-20 = $180-240Mr, $100Mr+ AWS taahhüdü</span><span class="num">19 Tem</span></div>
+          <div class="ema-row"><span><b>AWS %28 büyüme</b> — 15 çeyreğin en iyisi, $364Mr backlog, 29x "makul değerleme"</span><span class="num">20 Tem</span></div>
+          <div class="ema-row"><span><b>$25Mr tahvil ihracı</b> — 40 yıl vade, hazineye &lt;150bp fark (güçlü sermaye erişimi)</span><span class="num">19 Tem</span></div>
+          <div class="ema-row"><span><b>Musk: "Anthropic AI lideri"</b> — AMZN'in yatırımını doğrulayan tersine dönüş</span><span class="num">19 Tem</span></div>
+        </div>
+        <div class="cap">7 pozitif (6 doğrudan şirket haberi ×2 ağırlık)</div>
+      </div>
+      <div class="viz" style="border-top:3px solid var(--bear)">
+        <h4 style="color:var(--bear)">📰 Negatif + Çapraz Okuma — Skor 2/10 <span class="tag3 v">VERİ</span></h4>
+        <div class="ema-stack" style="font-size:0.72rem">
+          <div class="ema-row"><span><b>AI bütçe kısıtlaması</b> — AMZN çalışan AI kullanımını sınırlayan şirketler arasında sayıldı</span><span class="num">20 Tem</span></div>
+          <div class="ema-row"><span><b>Pozitif haberlerin İÇİNDE:</b> 5 yıldır S&amp;P altında performans, bulutta pay kaybı, emsallerin en pahalısı</span><span class="num">19-20 Tem</span></div>
+        </div>
+        <div class="gauge-val" style="margin-top:0.4rem">NET: <span style="color:var(--bull)">+7</span> → anlatı <b>destekliyor</b></div>
+        <div class="cap">✓ Çapraz kontrol: UUUU'daki "iyi habere dağıtım" uyarısı burada YOK — fiyat 30 günde yatay (−%1), haber akışıyla çelişmiyor. Ama haberler geleceğe dönük vaatler; TTM rakamlar henüz doğrulamıyor.</div>
+      </div>
+    </div>
+
+    <div class="viz" style="border-top:3px solid var(--accent)">
+      <h4>📋 Özet Skorlama — her satır ne anlama geliyor?</h4>
+      <div class="cap" style="margin:0 0 0.5rem">5 yıldız = mükemmel, 1 yıldız = kötü. Yanında <b>neden o puanı aldığı</b> ve <b>ne kadar önemli olduğu</b> yazıyor.</div>
+      <div class="ema-stack" style="font-size:0.78rem">
+        <div class="ema-row"><span><b>Risk/Getiri</b> — planlanan $235 girişinden</span><span>★★★★☆</span></div>
+        <div class="nd" style="margin:0 0 0.4rem"><b>Ne ölçer:</b> Kazanç beklentisinin riske oranı. <b>Önem: ÇOK YÜKSEK</b> — tek başına "al mı bekle mi" kararını verir.<br><b>Neden 4 yıldız:</b> $235'ten 2.2 oran (iyi). Ama şu andan girişte 0.5'e düşüyor (kötü) — o yüzden 5 değil.</div>
+
+        <div class="ema-row"><span><b>Trend</b> — fiyatın genel yönü</span><span>★★★☆☆</span></div>
+        <div class="nd" style="margin:0 0 0.4rem"><b>Ne ölçer:</b> Fiyat yukarı mı aşağı mı gidiyor. <b>Önem: YÜKSEK</b> — trende karşı işlem yapmak zordur.<br><b>Neden 3 yıldız:</b> Uzun vadeli ortalamanın üstünde (iyi) ama 50 günlüğün altında (zayıf) → karışık, yatay.</div>
+
+        <div class="ema-row"><span><b>Momentum</b> — hareketin hızı</span><span>★★★☆☆</span></div>
+        <div class="nd" style="margin:0 0 0.4rem"><b>Ne ölçer:</b> Fiyat hızlanıyor mu yavaşlıyor mu. <b>Önem: ORTA</b> — dönüş noktalarını erken yakalar.<br><b>Neden 3 yıldız:</b> MACD yukarı döndü (olumlu) ama RSI tam nötr 51 → henüz güç toplanmamış.</div>
+
+        <div class="ema-row"><span><b>Temel</b> — şirketin sağlığı</span><span>★★★☆☆</span></div>
+        <div class="nd" style="margin:0 0 0.4rem"><b>Ne ölçer:</b> Kâr, borç, nakit üretimi — şirket gerçekten iyi mi. <b>Önem: ÇOK YÜKSEK (uzun vadede)</b> — kısa vadede fiyatı etkilemez ama 1 yıl+ tutacaksan en önemli satır budur.<br><b>Neden 3 yıldız:</b> Kalite yüksek (kârlılık, düşük borç) <b>ama serbest nakit akışı negatif</b> — bu tek eksik puanı 5'ten 3'e indiriyor.</div>
+
+        <div class="ema-row"><span><b>Haber</b> — haber akışının yönü</span><span>★★★★★</span></div>
+        <div class="nd" style="margin:0 0 0.4rem"><b>Ne ölçer:</b> Son haberler olumlu mu olumsuz mu. <b>Önem: ORTA</b> — kısa vadeli hareketleri tetikler ama tek başına yön belirlemez.<br><b>Neden 5 yıldız:</b> 15 makalenin 7'si açıkça olumlu, sadece 1'i olumsuz (net +7). Trainium, Anthropic, AWS büyümesi hep iyi haberler.</div>
+
+        <div class="ema-row"><span><b>Volatilite</b> — oynaklık (düşük olması iyi)</span><span>★★★☆☆</span></div>
+        <div class="nd" style="margin:0 0 0.4rem"><b>Ne ölçer:</b> Fiyatın günlük ne kadar zıpladığı. <b>Önem: ORTA</b> — pozisyon büyüklüğünü belirler, yönü değil.<br><b>Neden 3 yıldız:</b> Günde ±%1.5 — büyük şirketler için normal. Ne rahat ne de tehlikeli.</div>
+
+        <div class="ema-row"><span><b>Insider</b> — yöneticilerin davranışı</span><span>★★★☆☆</span></div>
+        <div class="nd" style="margin:0 0 0.4rem"><b>Ne ölçer:</b> Şirketin kendi yöneticileri kendi paralarıyla alıyor mu. <b>Önem: YÜKSEK (nadir ama güçlü sinyal)</b> — 3+ yönetici birlikte alım yaparsa çok değerlidir.<br><b>Neden 3 yıldız:</b> Alım <b>yok</b>, satışların tamamı otomatik plandan (rutin). Ne kötü haber ne destek → tam nötr.</div>
+
+        <div class="ema-row"><span><b>Güven</b> — bu analizin sağlamlığı</span><span>★★★★☆</span></div>
+        <div class="nd" style="margin:0 0 0.2rem"><b>Ne ölçer:</b> Kullanılan verilerin eksiksizliği ve tutarlılığı. <b>Önem: YÜKSEK</b> — düşükse diğer tüm puanlara temkinli yaklaşmak gerekir.<br><b>Neden 4 yıldız:</b> Veriler eksiksiz ve iki kaynaktan doğrulandı. Tek zayıflık: analistler kendi aralarında anlaşamıyor ($175-335 bandı).</div>
+      </div>
+      <div class="note" style="margin-top:0.8rem"><span class="warn">Tek cümle özet:</span> 43 analistin 2027 konsensüsüne göre ileri F/K 24.5x'e geriliyor ve fair-value bandının bazı $273 (+%10) — yani ileriye bakınca değerleme takip eden 29.3x'in gösterdiği kadar pahalı değil; ancak serbest nakit akışı hâlâ negatif, insider desteği yok ve şu andan giriş R/R'ı 0.5 olduğundan yeni alım için $232-238 destek bölgesi beklenmeli, eldeki pozisyon 30 Temmuz bilançosu öncesi $253-257 direncinde kademeli hafifletilmeli.</div>
+    </div>
+
+
+    <div class="viz" style="border-top:3px solid var(--muted);margin-top:1rem">
+      <h4>📖 Küçük Sözlük — rapordaki terimler</h4>
+      <div class="gloss">
+        <div><b>Destek</b> — fiyatın geçmişte birkaç kez düşüp geri döndüğü seviye. Alıcıların devreye girdiği yer.</div>
+        <div><b>Direnç</b> — fiyatın geçmişte birkaç kez çıkıp geri düştüğü seviye. Satıcıların devreye girdiği yer.</div>
+        <div><b>Stop (zarar kes)</b> — "buranın altına inerse tezim yanlıştı, çıkarım" dediğin fiyat. Zararı sınırlar.</div>
+        <div><b>R/R (risk/kazanç)</b> — kazanabileceğinin kaybedebileceğine oranı. 2.0 = 1 lira riske karşı 2 lira kazanç beklentisi. 1'in altı kötüdür.</div>
+        <div><b>Kademeli satış</b> — hepsini tek fiyattan satmak yerine parça parça satmak. Yanılma payını azaltır.</div>
+        <div><b>Hareketli ortalama (MA/EMA)</b> — son X günün ortalama fiyatı. Fiyat üstündeyse eğilim yukarı, altındaysa aşağı kabul edilir.</div>
+        <div><b>RSI</b> — 0-100 arası bir "aşırılık" ölçer. 70 üstü çok alınmış, 30 altı çok satılmış demektir. 50 civarı nötr.</div>
+        <div><b>MACD</b> — momentumun (hızın) yön değiştirip değiştirmediğini gösterir. Yukarı kesişim = hız yukarı dönüyor.</div>
+        <div><b>F/K oranı</b> — hisse fiyatının, şirketin hisse başı kârına bölümü. Kabaca "kaç yıllık kâra alıyorum" demek. Yüksekse pahalı sayılır.</div>
+        <div><b>FCF (serbest nakit akışı)</b> — şirket tüm masraf ve yatırımlarını yaptıktan sonra <b>cebinde kalan</b> para. Negatifse harcaması kazancından fazla demektir.</div>
+        <div><b>Capex (yatırım harcaması)</b> — şirketin fabrika, veri merkezi gibi kalıcı varlıklara yaptığı harcama. Geleceğe yatırımdır ama bugünkü nakdi yer.</div>
+        <div><b>Insider</b> — şirketin kendi yöneticileri/yönetim kurulu. Kendi paralarıyla alım yapmaları güçlü bir güven işaretidir.</div>
+        <div><b>10b5-1 planı</b> — yöneticinin aylar öncesinden takvime bağladığı otomatik satış. Görüş belirtmez, <b>rutin</b> sayılır.</div>
+        <div><b>Konsensüs</b> — çok sayıda analistin tahminlerinin ortalaması. Gerçek değil, <b>ortak beklentidir</b>.</div>
+        <div><b>Volatilite</b> — fiyatın ne kadar oynak olduğu. Yüksekse pozisyonu küçük tutmak gerekir.</div>
+        <div><b>Short interest</b> — hissenin düşeceğine oynayanların miktarı. Çok yüksekse ani yukarı sıçrama (squeeze) riski vardır.</div>
+      </div>
+    </div>
+  
+
+
+    <div class="final">
+      <div class="eyebrow">SON SÖZ</div>
+      <h3>🎯 SONUÇ — Ne Yapmalıyım?</h3>
+      <div class="cap" style="margin-bottom:0.3rem">Raporun tamamındaki verilerin tek kararda toplanmış hali. Aşağıdan <b>kendi durumuna uyan yolu</b> oku ve uygula.</div>
+
+      <div class="path a">
+        <div class="ph" style="color:var(--bull)">🅰️ HİSSEM YOK — Almak istiyorum</div>
+        <div class="step"><span class="n">✕</span><span><b>Bugün ALMA.</b> Fiyat $247.51 ve üç sebepten uygun değil: ① yukarıda ilk engel sadece %3 uzakta ama zarar kes %6 aşağıda (risk kazançtan büyük) · ② bilanço 9 gün sonra, sonucu bilinmiyor · ③ fiyat bandın tam ortasında, kenar değil.</span></div>
+        <div class="step"><span class="n">1</span><span><b>Beklenecek fiyat: $232 – $238.</b> Burası hem uzun vadeli ortalamanın ($234) hem son 6 ayın en yoğun alıcı bölgelerinden birinin ($230-235, hacmin %10'u) üstü. <b>30 gün içinde oraya inme ihtimali %45.</b></span></div>
+        <div class="step"><span class="n">2</span><span><b>Oraya gelirse:</b> hemen tamamını alma — <b>önce yarısını</b> al. Fiyatın orada durup dönmeye başladığını gör (bir-iki gün yeşil kapanış). Sonra <b>30 Temmuz bilançosunu bekle</b>, sonuç iyi gelirse kalan yarıyı tamamla.</span></div>
+        <div class="step"><span class="n">3</span><span><b>Zarar kes emri: $226.</b> Buranın altı, alım gerekçemizin yanlış olduğu anlamına gelir. Kaybın giriş fiyatının %3.8'i ile sınırlı kalır.</span></div>
+        <div class="step"><span class="n">4</span><span><b>Alternatif senaryo:</b> Fiyat $232'ye hiç inmez ve yukarı $257'yi <b>yüksek hacimle</b> geçerse — o da bir alım sinyalidir (yukarı kırılım). Ama o durumda <b>daha küçük pozisyonla</b> gir, çünkü giriş fiyatın yüksek olur.</span></div>
+        <div class="step"><span class="n">5</span><span><b>İkisi de olmazsa:</b> alma. Fırsat maliyeti düşük — beklenen 3 aylık getiri zaten sadece +%2.5. Başka hisseye bakmak daha mantıklı.</span></div>
+        <div class="step"><span class="n">💰</span><span><b>Ne kadar para:</b> Portföyünün <b>%13'ü</b> (dengeli). Bilanço öncesi bunun yarısıyla başla. Bu boyutta, en kötü senaryoda toplam paranın sadece %0.5'ini kaybedersin.</span></div>
+      </div>
+
+      <div class="path b">
+        <div class="ph" style="color:var(--accent)">🅱️ HİSSEM VAR — Ne zaman satayım?</div>
+        <div class="step"><span class="n">✓</span><span><b>SATMA, TUT.</b> Trend bozulmadı (fiyat uzun vadeli ortalamanın üstünde), 12 aylık beklenti <b>+%12.3</b> ve fiyatın bir yıl sonra bugünden yüksek olma ihtimali <b>%75</b>.</span></div>
+        <div class="step"><span class="n">⚠</span><span><b>Ama bilanço öncesi bir kısmını hafiflet.</b> 30 Temmuz binary bir olay — tek günde %5-8 oynayabilir. Fiyat $250 üstündeyse pozisyonun <b>%30-40'ını</b> sat, kalanla bilançoyu karşıla. Böylece kötü sonuçta az yanarsın, iyi sonuçta yine kazanırsın.</span></div>
+        <div class="step"><span class="n">⚡</span><span><b>Kısa vadeli satış (haftalar):</b> $253-257'de <b>%40</b> · $265-270'te <b>%40</b> · kalan %20'yi $278 hedefiyle taşı. <i>(Not: $250-260 arası hacim çok ince, fiyat oradan hızlı geçebilir — emirlerini önceden koy.)</i></span></div>
+        <div class="step"><span class="n">🎯</span><span><b>Uzun vadeli satış (6-12 ay):</b> $305-315'te <b>%40</b> · $355-365'te kalan. <b>$273 civarında SATMA</b> — orası hesaplanan adil değer, prim değil.</span></div>
+        <div class="step"><span class="n">🛑</span><span><b>ANINDA SAT:</b> Günlük kapanış <b>$232'nin altına</b> inerse. Orası hem uzun vadeli ortalama hem büyük alıcı bölgesi — kırılırsa tablo tamamen değişir, beklemeden çık.</span></div>
+      </div>
+
+      <div class="path" style="border-color:var(--base);background:color-mix(in srgb,var(--base) 6%,transparent)">
+        <div class="ph" style="color:var(--base)">⏳ KISA VADE Mİ, UZUN VADE Mİ?</div>
+        <div class="cap" style="margin:0 0 0.4rem;font-size:0.8rem">Bu hisse için cevap net: <b>UZUN VADE.</b> Üç sebeple:</div>
+        <div class="step"><span class="n" style="background:var(--base)">1</span><span><b>Getiri zamanla büyüyor:</b> 3 ayda beklenen sadece <b>+%2.5</b>, 12 ayda <b>+%12.3</b>. Kısa vadede uğraşmaya değmez.</span></div>
+        <div class="step"><span class="n" style="background:var(--base)">2</span><span><b>Hikaye zaman istiyor:</b> Şirketin devasa yatırımlarının (veri merkezleri, yapay zeka çipleri) geri dönüp dönmediği <b>2027'de anlaşılacak</b>. Bu bir sabır meselesi, birkaç haftalık işlem değil.</span></div>
+        <div class="step"><span class="n" style="background:var(--base)">3</span><span><b>Kısa vade için malzeme yok:</b> Trend yatay, momentum nötr, giriş noktası kötü. Kısa vadeli işlem için <b>daha net hareket eden hisseler</b> daha uygun.</span></div>
+        <div class="step"><span class="n" style="background:var(--base)">↔</span><span><b>İkisini birden yapacaksan:</b> pozisyonu baştan böl — <b>%60 uzun vade çekirdek</b> (dokunma), <b>%40 kısa vade</b> (dirençlerde al-sat). Yoksa kısa vadeli satışların uzun vadeli tezini de kapatır.</span></div>
+      </div>
+
+      <div class="path" style="border-color:var(--bear);background:color-mix(in srgb,var(--bear) 5%,transparent)">
+        <div class="ph" style="color:var(--bear)">🚨 NE OLURSA FİKRİMİ DEĞİŞTİRİRİM?</div>
+        <div class="step"><span class="n" style="background:var(--bear)">1</span><span><b>Fiyat $232 altında günlük kapanış yaparsa</b> → teknik tablo bozulur, pozisyondan çık.</span></div>
+        <div class="step"><span class="n" style="background:var(--bear)">2</span><span><b>AWS büyümesi üst üste 2 çeyrek %25 altına inerse</b> → şirketin ana kâr motoru yavaşlıyor demektir, uzun vadeli tez çöker.</span></div>
+        <div class="step"><span class="n" style="background:var(--bear)">3</span><span><b>Serbest nakit akışı 2027'ye kadar pozitife dönmezse</b> → dev yatırımlar geri dönmüyor demektir. Fiyattan bağımsız pozisyonu azalt.</span></div>
+      </div>
+
+      <div class="bigline">📌 TEK CÜMLEYLE: Elinde varsa <b>TUT</b> (bilanço öncesi %30-40 hafiflet); yoksa <b>$232-238'i bekle</b> ve oraya gelirse <b>uzun vadeli</b> pozisyon aç — bugünkü fiyattan almak için ne yeterince ucuz, ne de belirsizlik yeterince azalmış durumda.</div>
+
+      <div class="cap" style="margin-top:0.7rem">⚠️ Bu rapor <b>eğitim ve araştırma amaçlıdır, yatırım tavsiyesi değildir.</b> Tüm fiyat hedefleri ve olasılıklar tahmindir. Nihai karar ve sorumluluk sana aittir. Pozisyon büyüklüğü önerileri genel risk kurallarına dayanır; kendi mali durumunu ve risk toleransını dikkate al.</div>
+    </div>
+
+  </section>
+
+  <footer class="sources">
+    <div><strong>Kaynaklar</strong></div>
+    <ul>
+      <li><span class="tag3 v">VERİ</span> Fiyat $247.51, 52H $196–278.56, 50G/200G MA: FMP quote (21 Tem 2026) · RSI/BB/EMA/MACD: TradingView günlük grafik (BB genişliği %10.8 → sağlık kontrolü geçti)</li>
+      <li><span class="tag3 v">VERİ</span> Temel metrikler (F/K, EV/EBITDA, FCF verimi, capex/OCF, kaldıraç, ROE/ROIC, nakit döngüsü): FMP key-metrics-ttm</li>
+      <li><span class="tag3 v">VERİ</span> Bilanço 30 Tem 2026, EPS bek. $1.82, gelir bek. $196.68Mr: FMP earnings-calendar · Analist hedefleri ($175/$309.03/$335): FMP price-target-consensus</li>
+      <li><span class="tag3 v">VERİ</span> Haberler: Massive /v2/reference/news — 15 makale (19-21 Tem 2026), sentiment gerekçeleri API'den · AWS %28, $364Mr backlog, Trainium $20Mr/$225Mr, Anthropic %15-20 payı, $25Mr tahvil, emsal ileri F/K'lar (META 18.7x, MSFT 20.7x, GOOGL 25x) haber metinlerinden</li>
+      <li><span class="tag3 v">VERİ</span> Insider işlemleri: <b>Massive /stocks/filings/vX/form-4</b> (SEC Form 4, 10b5-1 bayrağı ve kalan pay dahil) — FMP insiderTrades plan kısıtına takıldığı için bu kaynağa geçildi, UUUU verisiyle regresyon testi birebir doğrulandı</li>
+      <li><span class="tag3 v">VERİ (konsensüs)</span> İleri kazanç tahminleri (2027-2030 epsLow/Avg/High + analist sayısı): FMP analyst financial-estimates · Not değişiklikleri: FMP analyst grades (1438 kayıt, son 14 taranarak)</li>
+      <li><span class="tag3 v">VERİ</span> Temettü: FMP calendar dividends-company → kayıt yok; key-metrics-ttm'de de temettü verimi yok (çapraz doğrulama) · Fiyat zaman damgası: FMP quote timestamp alanı (unix 1784652133 → 21 Tem 19:42)</li>
+      <li><span class="tag3 v">VERİ</span> Short interest / konumlanma: Massive /stocks/v1/short-interest (FINRA, iki haftalık)</li>
+      <li><span class="warn">Doğrulanamadı:</span> Gelir segment kırılımı · Opsiyon verisi (IV/delta) — Massive opsiyon ucu plan kısıtlı, olasılıklar bu yüzden piyasa-türevli değil ÇIKARIM olarak kaldı</li>
+      <li><span class="tag3 c">ÇIKARIM</span> Türetilmiş gelir/OCF/capex/FCF rakamları (EV çarpanlarından), fair-value bandı ($189/$263/$337) ve varsayımları, R/R, olasılıklar, senaryolar, pozisyon önerileri · <span class="tag3 s">SPEKÜLASYON</span> ayrıca işaretlendi</li>
+    </ul>
+    <div>GCstock günlük karar raporu. Eğitim ve araştırma amaçlıdır; lisanslı yatırım danışmanlığı değildir. Nihai alım-satım kararı yatırımcıya aittir.</div>
+  </footer>
+</div>
